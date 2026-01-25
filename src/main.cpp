@@ -1,26 +1,42 @@
-#include "GLFW/glfw3.h"
-#include <stdio.h>
+// STL headers
+#include <iostream>
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+// GLFW headers
+#include "GLFW/glfw3.h"
+
+// Project headers
+#include "user.h"
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	auto user = static_cast<User*>(glfwGetWindowUserPointer(window));
+
 	if (action == GLFW_PRESS)
-		printf("click\n");
+	{
+		user->pressedKeys.insert(key);
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		user->pressedKeys.erase(key);
+	}
 }
 
 int main(void)
 {
 	if (!glfwInit())
-		return -1;
+	{
+		return EXIT_FAILURE;
+	}
 
 	GLFWwindow* window = glfwCreateWindow(640, 480, "Hello, GLFW World!", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetKeyCallback(window, keyCallback);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -31,5 +47,5 @@ int main(void)
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
-	return 0;
+	return EXIT_SUCCESS;
 }
