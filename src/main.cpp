@@ -7,18 +7,9 @@
 // Project headers
 #include "user.h"
 
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	auto user = static_cast<User*>(glfwGetWindowUserPointer(window));
-
-	if (action == GLFW_PRESS)
-	{
-		user->pressedKeys.insert(key);
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		user->pressedKeys.erase(key);
-	}
+	static_cast<CUser*>(glfwGetWindowUserPointer(window))->handleKey(key, action);
 }
 
 int main(void)
@@ -35,14 +26,21 @@ int main(void)
 		return EXIT_FAILURE;
 	}
 
+	CUser user;
+	user.loadFile("assets/42.obj");
+
 	glfwMakeContextCurrent(window);
+	glfwSetWindowUserPointer(window, &user);
 	glfwSetKeyCallback(window, keyCallback);
 
 	while (!glfwWindowShouldClose(window))
-	{
+	{	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		glfwGetInputMode(window, GLFW_CURSOR);
+
+		user.updateScene();
+		user.render(window);
 	}
 
 	glfwDestroyWindow(window);

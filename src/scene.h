@@ -1,35 +1,28 @@
 #pragma once
 
 // STL headers
-#include <set>
-
-// GLFW headers
-#include "GLFW/glfw3.h"
+#include <vector>
 
 // Project headers
-#include "scene.h"
+#include "object.h"
 
-class CUser
+class CScene
 {
 public:
 	//-------------------------------//
 	//- Constructors / Destructors  -//
 	//-------------------------------//
-	CUser() = default;
-	~CUser() = default;
+	CScene() = default;
+	~CScene() = default;
 
 	//-------------------------------//
-	//- Operations                  -//
+	//- Parameters                  -//
 	//-------------------------------//
-	void loadFile(const std::string& filename);
-	void handleKey(int key, int action);
-	void updateScene();
-	void render(GLFWwindow* window);
-	
+	void addObject(const SObject& object) { m_pObjects.push_back(object); }
+
 private:
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//
-	std::set<int> m_pPressedKeys;
-	CScene	      m_pScene;
+	SObjects m_pObjects;
 };
