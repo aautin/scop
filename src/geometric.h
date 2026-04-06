@@ -1,7 +1,16 @@
 #pragma once
 
+
 // STL headers
 #include <vector>
+#include <limits>
+#include <cmath>
+
+enum ESquareType
+{
+	Concave,
+	Convex,
+};
 
 struct SVertex
 {
@@ -11,12 +20,18 @@ using SVertexes = std::vector<SVertex>;
 
 struct SFace
 {
-	unsigned int vertexIndices[3];
+	std::vector<size_t> verticesIndices;
 };
 using SFaces = std::vector<SFace>;
 
 struct STriangle
 {
-	SVertex v1, v2, v3;
+	size_t verticesIndices[3];
 };
 using STriangles = std::vector<STriangle>;
+
+float epsilon();
+
+bool areCoplanar(const SVertex& a, const SVertex& b, const SVertex& c, const SVertex& d);
+bool areConvex(const SVertex& a, const SVertex& b, const SVertex& c, const SVertex& d);
+STriangles getTriangles(const SVertex& a, const SVertex& b, const SVertex& c, const SVertex& d);

@@ -7,9 +7,21 @@
 // Project headers
 #include "geometric.h"
 
-struct SObject
+class CObject
 {
-	std::string            name;
-	std::vector<STriangle> triangles;
+public:
+	//-------------------------------//
+	//- Constructors / Destructors  -//
+	//-------------------------------//
+	CObject(const std::string& name, const SVertexes& vertexes, const SFaces& faces);
+	~CObject() = default;
+	
+private:
+	//-------------------------------//
+	//- Data                        -//
+	//-------------------------------//
+	std::string     m_pName;
+	STriangles      m_pTriangles;
+	const SVertexes m_pVertexes;
 };
-using SObjects = std::vector<SObject>;
+using CObjects = std::vector<CObject>;

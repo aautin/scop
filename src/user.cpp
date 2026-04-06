@@ -1,12 +1,17 @@
 #include "user.h"
 
 // STL headers
+#include <iostream>
 #include <fstream>
 #include <optional>
 
 // Project headers
 #include "parsing.h"
 
+
+//-------------------------------//
+//- Operations                  -//
+//-------------------------------//
 void CUser::handleKey(int key, int action)
 {
 	if (action == GLFW_PRESS)
@@ -26,12 +31,13 @@ void CUser::loadFile(const std::string& filename)
 		throw std::runtime_error("Only .obj files are supported");
 	}
 	
+	std::optional<std::string> objectName;
+	SVertexes                  vertexes;
+	SFaces                     faces;
+
 	auto fileContent = std::ifstream(filename);
 	for (std::string line; std::getline(fileContent, line);)
 	{
-		std::optional<std::string> objectName;
-		SVertexes   vertexes;
-		SFaces      faces;
 		
 		CParsing::removeComments(line);
 		if (line.empty())
@@ -39,15 +45,32 @@ void CUser::loadFile(const std::string& filename)
 			continue;
 		}
 
-		ELineType lineType = CParsing::getLineType(line);
+		CParsing::ELineType lineType = CParsing::getLineType(line);
 		switch (lineType)
 		{
-		case ELineType::Object
+		case CParsing::Object:
 		{
-			object = CParsing::getObjectName(line);
+			if (objectName)
+			{
+				try
+				{
+					CObject object(*objectName, vertexes, faces);
+					m_pScene.addObject(object);
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr << "Error loading object: " << e.what() << std::endl;
+				}
+
+				objectName.reset();
+			}
+			
+			vertexes.clear();
+			faces.clear();
+			objectName = CParsing::getObjectName(line);
 			break;
 		}
-		case ELineType::Vertex:
+		case CParsing::Vertex:
 		{
 			if (!objectName)
 			{
@@ -57,26 +80,31 @@ void CUser::loadFile(const std::string& filename)
 			vertexes.push_back(CParsing::getVertex(line));
 			break;
 		}
-		case ELineType::Face:
+		case CParsing::Face:
 		{
 			if (!objectName)
 			{
 				throw std::runtime_error("Face defined before object");
 			}
 
-			auto face = CParsing::getFace(line);
-			for (unsigned int i = 0; i < 3; ++i)
-			{
-				if(face.vertexIndices[i] > vertexes.size())
-				{
-					throw std::runtime_error("Face references non-existent vertex");
-				}
-			}
-			faces.push_back(face);
+			faces.push_back(CParsing::getFace(line));
 			break;
 		}
-		case ELineType::None:
+		case CParsing::None:
 			throw std::runtime_error("Unknown line type");
+		}
+	}
+
+	if (objectName)
+	{
+		try
+		{
+			CObject object(*objectName, vertexes, faces);
+			m_pScene.addObject(object);
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error loading object: " << e.what() << std::endl;
 		}
 	}
 }

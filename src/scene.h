@@ -18,11 +18,11 @@ public:
 	//-------------------------------//
 	//- Parameters                  -//
 	//-------------------------------//
-	void addObject(const SObject& object) { m_pObjects.push_back(object); }
+	void addObject(const CObject& object) { m_pObjects.push_back(object); }
 
 private:
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//
-	SObjects m_pObjects;
+	CObjects m_pObjects;
 };
