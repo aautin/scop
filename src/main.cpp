@@ -1,9 +1,6 @@
 // STL headers
 #include <iostream>
 
-// GLFW headers
-#include "GLFW/glfw3.h"
-
 // Project headers
 #include "user.h"
 
@@ -16,18 +13,21 @@ int main(void)
 {
 	if (!glfwInit())
 	{
+		std::cout << "glfwInit";
 		return EXIT_FAILURE;
 	}
 
 	GLFWwindow* window = glfwCreateWindow(640, 480, "Hello, GLFW World!", NULL, NULL);
 	if (!window)
 	{
+		std::cout << "glfwCreateWindow";
+
 		glfwTerminate();
 		return EXIT_FAILURE;
 	}
 
 	CUser user;
-	user.loadFile("assets/42.obj");
+	user.loadFile("assets/tests/triangulation.obj");
 
 	glfwMakeContextCurrent(window);
 	glfwSetWindowUserPointer(window, &user);
@@ -38,9 +38,6 @@ int main(void)
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		glfwGetInputMode(window, GLFW_CURSOR);
-
-		user.updateScene();
-		user.render(window);
 	}
 
 	glfwDestroyWindow(window);

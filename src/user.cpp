@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <optional>
+#include <format>
 
 // Project headers
 #include "parsing.h"
@@ -38,13 +39,13 @@ void CUser::loadFile(const std::string& filename)
 	auto fileContent = std::ifstream(filename);
 	for (std::string line; std::getline(fileContent, line);)
 	{
-		
 		CParsing::removeComments(line);
 		if (line.empty())
 		{
 			continue;
 		}
 
+		std::cout << line;
 		CParsing::ELineType lineType = CParsing::getLineType(line);
 		switch (lineType)
 		{
@@ -65,7 +66,6 @@ void CUser::loadFile(const std::string& filename)
 				objectName.reset();
 			}
 			
-			vertexes.clear();
 			faces.clear();
 			objectName = CParsing::getObjectName(line);
 			break;
@@ -86,8 +86,17 @@ void CUser::loadFile(const std::string& filename)
 			{
 				throw std::runtime_error("Face defined before object");
 			}
+			
+			auto face = CParsing::getFace(line);
+			for (const auto& index : face.verticesIndices)
+			{
+				if (index > vertexes.size())
+				{
+					throw std::runtime_error(std::format("Face with a non existing index : {} ({})", line, index));
+				}
+			}
 
-			faces.push_back(CParsing::getFace(line));
+			faces.push_back(face);
 			break;
 		}
 		case CParsing::None:

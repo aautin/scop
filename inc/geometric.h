@@ -30,8 +30,4 @@ struct STriangle
 };
 using STriangles = std::vector<STriangle>;
 
-float epsilon();
-
-bool areCoplanar(const SVertex& a, const SVertex& b, const SVertex& c, const SVertex& d);
-bool areConvex(const SVertex& a, const SVertex& b, const SVertex& c, const SVertex& d);
-STriangles getTriangles(const SVertex& a, const SVertex& b, const SVertex& c, const SVertex& d);
+STriangles toTriangles(const SFace& face);

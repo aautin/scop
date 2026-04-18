@@ -36,7 +36,8 @@ $(OBJ_PATH)/%.o	:	$(SRC_PATH)/%.cpp
 					$(CC) -c $< -o $@ -I$(INC_PATH) -I$(GLFW_INC)
 
 $(GLFW_LIB)		:
-					cmake -S glfw -B $(GLFW_BUILD)
+					cmake -S glfw -B $(GLFW_BUILD) -DGLFW_BUILD_WAYLAND=OFF -DGLFW_BUILD_X11=OFF -DBUILD_SHARED_LIBS=ON
+
 					make -C $(GLFW_BUILD)
 
 # ---------------------------------------- #

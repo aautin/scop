@@ -1,41 +1,36 @@
 #include "object.h"
 
 // STL headers
-#include <stdexcept>
+#include <ranges>
+#include <iostream>
 
 //-------------------------------//
 //- Constructors / Destructors  -//
 //-------------------------------//
 CObject::CObject(const std::string& name, const SVertexes& vertexes, const SFaces& faces)
-: m_pName(name), m_pVertexes(vertexes)
+: m_pName(name)
 {
 	for (const SFace& face : faces)
 	{
-		if (face.verticesIndices.size() == 3)
+		auto triangles = toTriangles(face);
+		m_pTriangles.insert(m_pTriangles.begin(), triangles.begin(), triangles.end());
+	}
+	
+	for (size_t i = 0; i < vertexes.size(); ++i)
+	{
+		if (std::ranges::find_if(m_pTriangles, [i](const STriangle& it) { return
+			it.verticesIndices[0] == i ||
+			it.verticesIndices[1] == i ||
+			it.verticesIndices[2] == i; }) != m_pTriangles.end())
 		{
-			m_pTriangles.push_back({
-				face.verticesIndices[0],
-				face.verticesIndices[1],
-				face.verticesIndices[2]
-			});
-		}
-		else if (face.verticesIndices.size() == 4)
-		{
-			STriangle triangle1 = {
-				face.verticesIndices[0],
-				face.verticesIndices[1],
-				face.verticesIndices[2]
-			};
-			
-			STriangle triangle2 = {
-				face.verticesIndices[0],
-				face.verticesIndices[2],
-				face.verticesIndices[3]
-			};
-		}
-		else
-		{
-			throw std::runtime_error("Face must have 3 or 4 vertices");
+			m_pVertexes[i] = vertexes[i];
 		}
 	}
+
+	std::cout << "Object name: " << name << std::endl;
+	for (const auto& triangle : m_pTriangles)
+	{
+		std::cout << "Triangle " << triangle.verticesIndices[0] << triangle.verticesIndices[1] << triangle.verticesIndices[2] << std::endl;
+	}
+	std::cout << "-------------" << std::endl;
 }

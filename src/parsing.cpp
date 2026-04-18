@@ -49,13 +49,13 @@ SVertex CParsing::getVertex(const std::string& line)
 
 SFace CParsing::getFace(const std::string& line)
 {
-	SFace face;
+	SFace              face;
 	std::istringstream iss(line.substr(2));
-	std::string vertexIndex;
+	std::string        vertexIndex;
+
 	while (iss >> vertexIndex)
 	{
-		size_t index = std::stoul(vertexIndex);
-		face.verticesIndices.push_back(index);
+		face.verticesIndices.push_back(std::stoul(vertexIndex));
 	}
 	return face;
 }
