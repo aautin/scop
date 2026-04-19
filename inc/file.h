@@ -1,28 +1,42 @@
 #pragma once
 
 // STL headers
-#include <vector>
+#include <string>
 
 // Project headers
+#include "geometric.h"
 #include "object.h"
 
-class CScene
+enum ELineType
+{
+	Object,
+	Vertex,
+	Face,
+	Mtllib,
+	Usemtl,
+	SmoothingGroup,
+	None,
+};
+
+class CFile
 {
 public:
 	//-------------------------------//
 	//- Constructors / Destructors  -//
 	//-------------------------------//
-	CScene() = default;
-	~CScene() = default;
+	CFile(const std::string& filename);
+	~CFile() = default;
 
 	//-------------------------------//
 	//- Parameters                  -//
 	//-------------------------------//
-	void addObject(const CObject& object) { m_pObjects.push_back(object); }
+	CObjects getObjects() const { return m_pObjects; }
+	SVertices getVertices() const { return m_pVertices; }
 
 private:
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//
-	CObjects m_pObjects;
+	CObjects  m_pObjects;
+	SVertices m_pVertices;
 };

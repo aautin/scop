@@ -2,35 +2,19 @@
 
 // STL headers
 #include <set>
+#include <string>
 
 // GLFW headers
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
+#include "glad.h"
+#include "GLFW/glfw3.h"
 
 // Project headers
-#include "scene.h"
+#include "geometric.h"
+#include "object.h"
 
-class CUser
+struct SUser
 {
-public:
-	//-------------------------------//
-	//- Constructors / Destructors  -//
-	//-------------------------------//
-	CUser() = default;
-	~CUser() = default;
-
-	//-------------------------------//
-	//- Operations                  -//
-	//-------------------------------//
-	void loadFile(const std::string& filename);
-	void handleKey(int key, int action);
-	void updateScene();
-	void render(GLFWwindow* window);
-	
-private:
-	//-------------------------------//
-	//- Data                        -//
-	//-------------------------------//
-	std::set<int> m_pPressedKeys;
-	CScene	      m_pScene;
+	std::set<int> pressedKeys;
+	CObjects      objects;
+	SVertices     vertices;
 };

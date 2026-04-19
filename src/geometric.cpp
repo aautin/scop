@@ -16,7 +16,7 @@ STriangles toTriangles(const SFace& face)
 	}
 
 	STriangles result;
-	for (size_t i = 0; i < face.verticesIndices.size() - 2; i)
+	for (size_t i = 0; i < face.verticesIndices.size() - 2; ++i)
 	{
 		result.push_back({
 			face.verticesIndices[0],

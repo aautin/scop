@@ -16,7 +16,7 @@ struct SVertex
 {
 	float x, y, z;
 };
-using SVertexes = std::vector<SVertex>;
+using SVertices = std::vector<SVertex>;
 
 struct SFace
 {

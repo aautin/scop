@@ -11,8 +11,12 @@ GLFW_LIB	:=	glfw/build/src/libglfw3.a
 GLFW_INC	:=	glfw/include/
 
 SRC_FILES	:=	\
+				geometric.cpp \
+				object.cpp \
+				file.cpp \
+				glad.cpp \
 				main.cpp
-
+				
 OBJ_FILES	:=	$(SRC_FILES:.cpp=.o)
 
 SRC			:=	$(addprefix $(SRC_PATH)/, $(SRC_FILES))
@@ -20,7 +24,7 @@ OBJ			:=	$(addprefix $(OBJ_PATH)/, $(OBJ_FILES))
 DEP			:=	$(OBJ:.o=.d)
 
 # ---------------------------------------- #
-CC			:=	c++
+CC			:=	c++ -std=c++20 -lGL -lX11 -lpthread -ldl -g
 RM			:=	rm -rf
 
 # ---------------------------------------- #
@@ -33,12 +37,11 @@ $(OBJ_PATH)		:
 -include $(DEP)
 
 $(OBJ_PATH)/%.o	:	$(SRC_PATH)/%.cpp
-					$(CC) -c $< -o $@ -I$(INC_PATH) -I$(GLFW_INC)
+					$(CC) -MMD -MP -c $< -o $@ -I$(INC_PATH) -I$(GLFW_INC)
 
 $(GLFW_LIB)		:
-					cmake -S glfw -B $(GLFW_BUILD) -DGLFW_BUILD_WAYLAND=OFF -DGLFW_BUILD_X11=OFF -DBUILD_SHARED_LIBS=ON
-
-					make -C $(GLFW_BUILD)
+					cmake -S glfw -B $(GLFW_BUILD)
+					make -C $(GLFW_BUILD) --no-print-directory
 
 # ---------------------------------------- #
 .PHONY		:	all clean cleanlibs fclean re
@@ -46,12 +49,13 @@ $(GLFW_LIB)		:
 all			:	$(NAME)
 
 clean		:	
-				$(RM) $(OBJ_PATH)
+				$(RM) $(OBJ_PATH)/*.o $(OBJ_PATH)/*.d
 
 cleandeps	:
 				$(RM) $(GLFW_BUILD)
 
-fclean		:	clean cleandeps
+fclean		:	clean
 				$(RM) $(NAME)
 
 re			:	fclean all
+redeps	    :	cleandeps re
