@@ -40,11 +40,11 @@ $(OBJ_PATH)/%.o	:	$(SRC_PATH)/%.cpp
 					$(CC) -MMD -MP -c $< -o $@ -I$(INC_PATH) -I$(GLFW_INC)
 
 $(GLFW_LIB)		:
-					cmake -S glfw -B $(GLFW_BUILD)
+					cmake -S glfw -B $(GLFW_BUILD) -DGLFW_LIBRARY_TYPE=STATIC -DGLFW_BUILD_WAYLAND=OFF -DGLFW_BUILD_X11=ON
 					make -C $(GLFW_BUILD) --no-print-directory
 
 # ---------------------------------------- #
-.PHONY		:	all clean cleanlibs fclean re
+.PHONY		:	all clean cleandeps fclean re redeps
 
 all			:	$(NAME)
 
