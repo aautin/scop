@@ -43,3 +43,6 @@ scop
 
 # vscode
 .vscode/
+
+# include 3d objects .obj files
+!assets/**/*.obj
