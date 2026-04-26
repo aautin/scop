@@ -1,0 +1,11 @@
+o Zelda
+v -0.5 -0.288675 0.0 # Lower left vertex
+v 0.5 -0.288675 0.0  # Lower Right vertex
+v 0.0 0.57735 0.0    # Top vertex
+v -0.25 0.144337 0.0 # Mid left vertex
+v 0.25 0.144337 0.0  # Mid right vertex
+v 0.0 -0.288675 0.0  # Bottom vertex
+
+f 1 4 6 # Left triangle
+f 6 2 5	# Right triangle
+f 4 5 3	# Top triangle

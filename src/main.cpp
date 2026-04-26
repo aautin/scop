@@ -6,7 +6,14 @@
 #include "user.h"
 #include "file.h"
 
-#define VERTICE_FLOAT_COUNT 6
+#define VERTICE_FLOAT_COUNT 6 // 3 for position and 3 for color
+
+template <typename T>
+struct SPtr
+{
+	size_t size;
+	T*     data;
+};
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -47,12 +54,6 @@ static void loadFile(SUser& user, const std::string& filename)
 
 static void handleKeys(const SUser& user, GLFWwindow* window)
 {
-	// std::cout << "----" << std::endl;
-	// for (const auto& key : user.pressedKeys)
-	// {
-	// 	std::cout << "Key " << key << " is pressed" << std::endl;
-	// }
-
 	if (user.pressedKeys.contains(GLFW_KEY_ESCAPE))
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -61,12 +62,21 @@ static void handleKeys(const SUser& user, GLFWwindow* window)
 
 int main(int argc, char** argv)
 {
+	//-------------------------------//
+	//- Parsing                     -//
+	//-------------------------------//
 	if (argc != 2)
 	{
 		std::cout << "Usage: " << argv[0] << " <file.obj>" << std::endl;
 		return EXIT_FAILURE;
 	}
 
+	SUser user;
+	loadFile(user, argv[1]);
+
+	//-------------------------------//
+	//- OpenGL initialization       -//
+	//-------------------------------//
 	glfwSetErrorCallback(error_callback);
 
 	if (!glfwInit())
@@ -97,15 +107,13 @@ int main(int argc, char** argv)
 
 	glViewport(0, 0, 640, 480);
 
-	SUser user;
-	loadFile(user, argv[1]);
-
+	
 	glfwSetWindowUserPointer(window, &user);
 	glfwSetKeyCallback(window, keyCallback);
 
-	//
-	// Define the vertex and fragment shaders
-	//
+	//-------------------------------//
+	//- Vertex and fragment shaders -//
+	//-------------------------------//
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 	glCompileShader(vertexShader);
@@ -122,52 +130,96 @@ int main(int argc, char** argv)
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	size_t verticesCount = 0;
-	for (const auto& object : user.objects)
+	//-------------------------------//
+	//- Vertices and indices buffers-//
+	//-------------------------------//
+	SPtr<GLfloat> vertices =
 	{
-		verticesCount += object.getTriangles().size();
-	}
-	verticesCount = verticesCount * 3;
+		(user.vertices.size() * VERTICE_FLOAT_COUNT) * sizeof(GLfloat),
+		new GLfloat[user.vertices.size() * VERTICE_FLOAT_COUNT],
+	};
 
-	GLfloat* vertices = new GLfloat[verticesCount * VERTICE_FLOAT_COUNT]; // 3 for position and 3 for color
-	size_t vertexIndex = 0;
-	for (const auto& object : user.objects)
+	size_t indicesCount = 0;
+	for (auto& object : user.objects) { indicesCount += object.getTriangles().size() * 3; }
+	SPtr<GLuint> indices =
 	{
-		for (const auto& triangle : object.getTriangles())
+		indicesCount * sizeof(GLuint),
+		new GLuint[indicesCount],
+	};
+
+	{
+		size_t index = 0;
+		for (const auto& vertex : user.vertices)
 		{
 			auto chrono = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-			for (size_t i = 0; i < 3; ++i)
+			vertices.data[index++] = vertex.x;
+			vertices.data[index++] = vertex.y;
+			vertices.data[index++] = vertex.z;
+			
+			vertices.data[index++] = std::abs(std::sin(chrono));
+			vertices.data[index++] = std::abs(std::cos(chrono));
+			vertices.data[index++] = std::abs(std::tan(chrono));
+		}
+	}
+
+	{
+		size_t index = 0;
+		for (const auto& object : user.objects)
+		{
+			for (const auto& triangle : object.getTriangles())
 			{
-				auto vertex = user.vertices[triangle.verticesIndices[i] - 1];
-				vertices[vertexIndex++] = vertex.x;
-				vertices[vertexIndex++] = vertex.y;
-				vertices[vertexIndex++] = vertex.z;
-				
-				vertices[vertexIndex++] = std::abs(std::sin(chrono));
-				vertices[vertexIndex++] = std::abs(std::cos(chrono));
-				vertices[vertexIndex++] = std::abs(std::tan(chrono));
+				indices.data[index++] = triangle.verticesIndices[0] - 1;
+				indices.data[index++] = triangle.verticesIndices[1] - 1;
+				indices.data[index++] = triangle.verticesIndices[2] - 1;
 			}
 		}
 	}
 
-	GLuint VAO, VBO;
+	//-------------------------------//
+	//- Bindings                    -//
+	//-------------------------------//
+	GLuint VAO, VBO, EBO;
+
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO);
 
+	//
+	// We use a vertex buffer object to store vertices in GPU memory
+	//
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, verticesCount * VERTICE_FLOAT_COUNT * sizeof(float), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size, vertices.data, GL_STATIC_DRAW);
 	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTICE_FLOAT_COUNT * sizeof(float), NULL);
+	//
+	// Location 0 in source shader, 3 floats for color, no padding
+	//
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTICE_FLOAT_COUNT * sizeof(GLfloat), NULL);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTICE_FLOAT_COUNT * sizeof(float), (void*)(3 * sizeof(float)));
+	//
+	// Location 1 in source shader, 3 floats for color, 3-floats padded (position)
+	//
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTICE_FLOAT_COUNT * sizeof(GLfloat), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	//
+	// We use an element buffer to reuse vertices for multiple triangles
+	//
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size, indices.data, GL_STATIC_DRAW);
 
+	//
+	// Unbind to prevent accidental modifications
+	// Note: EBO shouldnt be unbound while VAO still bound, because VAO stores EBO binding
+	glBindBuffer(GL_ARRAY_BUFFER, 0);         // Unbind VBO
+	glBindVertexArray(0);                     // Unbind VAO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Unbind EBO
+
+	//-------------------------------//
+	//- Main loop (events and draw) -//
+	//-------------------------------//
 	while (!glfwWindowShouldClose(window))
 	{
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
@@ -175,18 +227,22 @@ int main(int argc, char** argv)
 		glUseProgram(shaderProgram);
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
+		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 		glfwSwapBuffers(window);
 
 		glfwPollEvents();
 		handleKeys(user, window);
 	}
 
+	//-------------------------------//
+	//- Cleanup                     -//
+	//-------------------------------//
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteProgram(shaderProgram);
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
+
 	return EXIT_SUCCESS;
 }
