@@ -1,12 +1,38 @@
 // STL headers
-#include <iostream>
 #include <chrono>
+#include <iostream>
+#include<string>
+#include<fstream>
+#include<sstream>
+#include<cerrno>
+
+// GLFW headers
+#include "glad.h"
+#include "GLFW/glfw3.h"
 
 // Project headers
+#include "glfwHandling.h"
 #include "user.h"
-#include "file.h"
+#include "objFile.h"
 
 #define VERTICE_FLOAT_COUNT 6 // 3 for position and 3 for color
+
+static std::string get_file_contents(const char* filename)
+{
+	std::ifstream in(filename, std::ios::binary);
+	if (in)
+	{
+		std::string contents;
+		in.seekg(0, std::ios::end);
+		contents.resize(in.tellg());
+		in.seekg(0, std::ios::beg);
+		in.read(&contents[0], contents.size());
+		in.close();
+		return(contents);
+	}
+	throw(errno);
+}
+
 
 template <typename T>
 struct SPtr
@@ -15,48 +41,29 @@ struct SPtr
 	T*     data;
 };
 
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout (location = 1) in vec3 aColor;\n"
-"out vec3 ourColor;\n"
-"void main() { gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0); ourColor = aColor; }\n\0";
-
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"in vec3 ourColor;\n"
-"void main() { FragColor = vec4(ourColor, 1.0f); }\n\0";
-
-static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
-	if (action == GLFW_PRESS)
-	{
-		user->pressedKeys.insert(key);
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		user->pressedKeys.erase(key);
-	}
-	
-}
-
-static void error_callback(int code, const char* description)
-{
-    std::cout << "Error " << code << ": " << description << std::endl;
-}
-
 static void loadFile(SUser& user, const std::string& filename)
 {
-	CFile file(filename);
+	CObjFile file(filename);
 	user.objects = file.getObjects();
 	user.vertices = file.getVertices();
 }
 
-static void handleKeys(const SUser& user, GLFWwindow* window)
+static void handleKeys(SUser& user, GLFWwindow* window)
 {
 	if (user.pressedKeys.contains(GLFW_KEY_ESCAPE))
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
+
+	if (user.pressedKeys.contains(GLFW_KEY_UP))
+	{
+		std::cout << "UP key is pressed" << std::endl;
+		user.scale += 0.01f;
+	}
+	else if (user.pressedKeys.contains(GLFW_KEY_DOWN))
+	{
+		std::cout << "DOWN key is pressed" << std::endl;
+		user.scale -= 0.01f;
 	}
 }
 
@@ -77,7 +84,7 @@ int main(int argc, char** argv)
 	//-------------------------------//
 	//- OpenGL initialization       -//
 	//-------------------------------//
-	glfwSetErrorCallback(error_callback);
+	glfwSetErrorCallback(errorCallback);
 
 	if (!glfwInit())
 	{
@@ -114,18 +121,27 @@ int main(int argc, char** argv)
 	//-------------------------------//
 	//- Vertex and fragment shaders -//
 	//-------------------------------//
+	const std::string vertexShaderSource = get_file_contents("shaders/default.vert");
+	const std::string fragmentShaderSource = get_file_contents("shaders/default.frag");
+	
+	const char* vertexShaderSourcePtr = vertexShaderSource.c_str();
+	const char* fragmentShaderSourcePtr = fragmentShaderSource.c_str();
+	
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+	glShaderSource(vertexShader, 1, &vertexShaderSourcePtr, NULL);
 	glCompileShader(vertexShader);
+	compileShaderErrors(vertexShader, "VERTEX");
 
 	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	glShaderSource(fragmentShader, 1, &fragmentShaderSourcePtr, NULL);
 	glCompileShader(fragmentShader);
+	compileShaderErrors(fragmentShader, "FRAGMENT");
 
 	GLuint shaderProgram = glCreateProgram();
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 	glLinkProgram(shaderProgram);
+	compileShaderProgramErrors(shaderProgram);
 
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
@@ -218,13 +234,24 @@ int main(int argc, char** argv)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Unbind EBO
 
 	//-------------------------------//
+	//- Uniforms                    -//
+	//-------------------------------//
+	//
+	// We uniforms to have shared variables between CPU and GPU, they're global to the
+	// shader program scope, updating a uniform can only be done between drawing calls
+	//
+	GLuint scaleId = glGetUniformLocation(shaderProgram, "scale");
+
+	//-------------------------------//
 	//- Main loop (events and draw) -//
 	//-------------------------------//
 	while (!glfwWindowShouldClose(window))
 	{
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
 		glUseProgram(shaderProgram);
+		glUniform1f(scaleId, user.scale);
 
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);

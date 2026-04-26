@@ -7,25 +7,14 @@
 #include "geometric.h"
 #include "object.h"
 
-enum ELineType
-{
-	Object,
-	Vertex,
-	Face,
-	Mtllib,
-	Usemtl,
-	SmoothingGroup,
-	None,
-};
-
-class CFile
+class CObjFile
 {
 public:
 	//-------------------------------//
 	//- Constructors / Destructors  -//
 	//-------------------------------//
-	CFile(const std::string& filename);
-	~CFile() = default;
+	CObjFile(const std::string& filename);
+	~CObjFile() = default;
 
 	//-------------------------------//
 	//- Parameters                  -//
@@ -34,6 +23,25 @@ public:
 	SVertices getVertices() const { return m_pVertices; }
 
 private:
+	//-------------------------------//
+	//- Internal definitions        -//
+	//-------------------------------//
+	enum ELineType
+	{
+		Object,
+		Vertex,
+		Face,
+		Mtllib,
+		Usemtl,
+		SmoothingGroup,
+		None,
+	};
+
+	//-------------------------------//
+	//- Internal operations         -//
+	//-------------------------------//
+	static ELineType getLineType(const std::string& line);
+
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//

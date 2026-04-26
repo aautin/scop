@@ -1,4 +1,4 @@
-#include "file.h"
+#include "objFile.h"
 
 // STL headers
 #include <sstream>
@@ -12,38 +12,6 @@ static void removeComments(std::string& line)
 	if (commentPos != std::string::npos)
 	{
 		line.erase(commentPos);
-	}
-}
-
-static ELineType getLineType(const std::string& line)
-{
-	if (line.starts_with("o "))
-	{
-		return ELineType::Object;
-	}
-	else if (line.starts_with("v "))
-	{
-		return ELineType::Vertex;
-	}
-	else if (line.starts_with("f "))
-	{
-		return ELineType::Face;
-	}
-	else if (line.starts_with("mtllib "))
-	{
-		return ELineType::Mtllib;
-	}
-	else if (line.starts_with("usemtl "))
-	{
-		return ELineType::Usemtl;
-	}
-	else if (line.starts_with("s "))
-	{
-		return ELineType::SmoothingGroup;
-	}
-	else
-	{
-		return ELineType::None;
 	}
 }
 
@@ -75,7 +43,7 @@ static SFace getFace(const std::string& line)
 //-------------------------------//
 //- Constructors / Destructors  -//
 //-------------------------------//
-CFile::CFile(const std::string& filename)
+CObjFile::CObjFile(const std::string& filename)
 {
 	if (filename.compare(filename.length() - 4, 4, ".obj"))
 	{
@@ -95,19 +63,19 @@ CFile::CFile(const std::string& filename)
 			continue;
 		}
 
-		ELineType lineType = getLineType(line);
+		CObjFile::ELineType lineType = getLineType(line);
 		switch (lineType)
 		{
-		case ELineType::Mtllib:
-		case ELineType::Usemtl:
-		case ELineType::SmoothingGroup:
+		case CObjFile::ELineType::Mtllib:
+		case CObjFile::ELineType::Usemtl:
+		case CObjFile::ELineType::SmoothingGroup:
 		{
 			//
 			// Ignored for now
 			//
 			break;
 		}
-		case ELineType::Object:
+		case CObjFile::ELineType::Object:
 		{
 			if (objectName)
 			{
@@ -119,7 +87,7 @@ CFile::CFile(const std::string& filename)
 			objectName = getObjectName(line);
 			break;
 		}
-		case ELineType::Vertex:
+		case CObjFile::ELineType::Vertex:
 		{
 			if (!objectName)
 			{
@@ -129,7 +97,7 @@ CFile::CFile(const std::string& filename)
 			vertices.push_back(getVertex(line));
 			break;
 		}
-		case ELineType::Face:
+		case CObjFile::ELineType::Face:
 		{
 			if (!objectName)
 			{
@@ -148,7 +116,7 @@ CFile::CFile(const std::string& filename)
 			faces.push_back(face);
 			break;
 		}
-		case ELineType::None:
+		case CObjFile::ELineType::None:
 			throw std::runtime_error(std::format("Unknown line type: {}", line));
 		}
 	}
@@ -159,4 +127,39 @@ CFile::CFile(const std::string& filename)
 	}
 
 	m_pVertices = vertices;
+}
+
+//-------------------------------//
+//- Internal operations         -//
+//-------------------------------//
+CObjFile::ELineType CObjFile::getLineType(const std::string& line)
+{
+	if (line.starts_with("o "))
+	{
+		return CObjFile::ELineType::Object;
+	}
+	else if (line.starts_with("v "))
+	{
+		return CObjFile::ELineType::Vertex;
+	}
+	else if (line.starts_with("f "))
+	{
+		return CObjFile::ELineType::Face;
+	}
+	else if (line.starts_with("mtllib "))
+	{
+		return CObjFile::ELineType::Mtllib;
+	}
+	else if (line.starts_with("usemtl "))
+	{
+		return CObjFile::ELineType::Usemtl;
+	}
+	else if (line.starts_with("s "))
+	{
+		return CObjFile::ELineType::SmoothingGroup;
+	}
+	else
+	{
+		return CObjFile::ELineType::None;
+	}
 }

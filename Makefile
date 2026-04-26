@@ -12,8 +12,9 @@ GLFW_INC	:=	glfw/include/
 
 SRC_FILES	:=	\
 				geometric.cpp \
+				glfwHandling.cpp \
 				object.cpp \
-				file.cpp \
+				objFile.cpp \
 				glad.cpp \
 				main.cpp
 				
