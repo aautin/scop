@@ -12,6 +12,8 @@ struct SUser
 {
 	std::set<int> pressedKeys;
 	CObjects      objects;
-	SVertices     vertices;
+	SVertices     positionVertices;
+	SVertices     textureVertices;
+	SVertices     normalVertices;
 	float         scale = 1.0f;
 };

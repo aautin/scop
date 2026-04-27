@@ -14,6 +14,7 @@
 #include "glfwHandling.h"
 #include "user.h"
 #include "objFile.h"
+#include "stbImage.h"
 
 #define VERTICE_FLOAT_COUNT 6 // 3 for position and 3 for color
 
@@ -233,6 +234,11 @@ int main(int argc, char** argv)
 	glBindVertexArray(0);                     // Unbind VAO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Unbind EBO
 
+	//-------------------------------//
+	//- Textures                    -//
+	//-------------------------------//
+	
+	
 	//-------------------------------//
 	//- Uniforms                    -//
 	//-------------------------------//

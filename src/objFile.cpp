@@ -51,9 +51,8 @@ CObjFile::CObjFile(const std::string& filename)
 	}
 	
 	std::optional<std::string> objectName;
-	SVertices                  vertices;
 	SFaces                     faces;
-
+	
 	auto fileContent = std::ifstream(filename);
 	for (std::string line; std::getline(fileContent, line);)
 	{
@@ -94,7 +93,7 @@ CObjFile::CObjFile(const std::string& filename)
 				throw std::runtime_error("Vertex defined before object");
 			}
 
-			vertices.push_back(getVertex(line));
+			m_pPositionVertices.push_back(getVertex(line));
 			break;
 		}
 		case CObjFile::ELineType::Face:
@@ -107,7 +106,7 @@ CObjFile::CObjFile(const std::string& filename)
 			auto face = getFace(line);
 			for (const auto& index : face.verticesIndices)
 			{
-				if (index == 0 || index > vertices.size())
+				if (index == 0 || index > m_pPositionVertices.size())
 				{
 					throw std::runtime_error(std::format("Face with a non existing index : {} ({})", line, index));
 				}
@@ -125,8 +124,6 @@ CObjFile::CObjFile(const std::string& filename)
 	{
 		m_pObjects.push_back(CObject(*objectName, faces));
 	}
-
-	m_pVertices = vertices;
 }
 
 //-------------------------------//

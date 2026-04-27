@@ -20,7 +20,9 @@ public:
 	//- Parameters                  -//
 	//-------------------------------//
 	CObjects getObjects() const { return m_pObjects; }
-	SVertices getVertices() const { return m_pVertices; }
+	SVertices getPositionVertices() const { return m_pPositionVertices; }
+	SVertices getTextureVertices() const { return m_pTextureVertices; }
+	SVertices getNormalVertices() const { return m_pNormalVertices; }
 
 private:
 	//-------------------------------//
@@ -46,5 +48,7 @@ private:
 	//- Data                        -//
 	//-------------------------------//
 	CObjects  m_pObjects;
-	SVertices m_pVertices;
+	SVertices m_pPositionVertices;
+	SVertices m_pTextureVertices;
+	SVertices m_pNormalVertices;
 };
