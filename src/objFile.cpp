@@ -5,6 +5,24 @@
 #include <fstream>
 #include <optional>
 #include <format>
+#include <stdexcept>
+#include <algorithm>
+#include <ranges>
+#include <random>
+
+static float randomFloat(float min, float max)
+{
+	static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+
+    return dis(gen);
+}
+
+static bool isSameColor(const SColor& color1, const SColor& color2)
+{
+	return color1.r == color2.r && color1.g == color2.g && color1.b == color2.b;
+}
 
 static void removeComments(std::string& line)
 {
@@ -20,24 +38,11 @@ static std::string getObjectName(const std::string& line)
 	return line.substr(2);
 }
 
-static SVertex getVertex(const std::string& line)
+static SPositionVertex getVertexPosition(const std::string& line)
 {
-	SVertex vertex;
+	SPositionVertex vertex;
 	sscanf(line.c_str(), "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
 	return vertex;
-}
-
-static SFace getFace(const std::string& line)
-{
-	SFace              face;
-	std::istringstream iss(line.substr(2));
-	std::string        vertexIndex;
-
-	while (iss >> vertexIndex)
-	{
-		face.verticesIndices.push_back(std::stoul(vertexIndex));
-	}
-	return face;
 }
 
 //-------------------------------//
@@ -50,8 +55,7 @@ CObjFile::CObjFile(const std::string& filename)
 		throw std::runtime_error("Only .obj files are supported");
 	}
 	
-	std::optional<std::string> objectName;
-	SFaces                     faces;
+	SPositionVertices vertices;
 	
 	auto fileContent = std::ifstream(filename);
 	for (std::string line; std::getline(fileContent, line);)
@@ -76,43 +80,48 @@ CObjFile::CObjFile(const std::string& filename)
 		}
 		case CObjFile::ELineType::Object:
 		{
-			if (objectName)
-			{
-				m_pObjects.push_back(CObject(*objectName, faces));
-				objectName.reset();
-			}
-			
-			faces.clear();
-			objectName = getObjectName(line);
+			m_pObjects.push_back(getObjectName(line));
 			break;
 		}
 		case CObjFile::ELineType::Vertex:
 		{
-			if (!objectName)
-			{
-				throw std::runtime_error("Vertex defined before object");
-			}
-
-			m_pPositionVertices.push_back(getVertex(line));
+			vertices.push_back(getVertexPosition(line));
 			break;
 		}
 		case CObjFile::ELineType::Face:
 		{
-			if (!objectName)
+			if (m_pObjects.empty())
 			{
 				throw std::runtime_error("Face defined before object");
 			}
 			
 			auto face = getFace(line);
-			for (const auto& index : face.verticesIndices)
+			for (const auto& index : face.vertexIndices)
 			{
-				if (index == 0 || index > m_pPositionVertices.size())
+				if (index == 0 || index > vertices.size())
 				{
 					throw std::runtime_error(std::format("Face with a non existing index : {} ({})", line, index));
 				}
 			}
+			for (auto& triangle : toTriangles(face))
+			{
+				SColor color;
+				do
+				{
+					color.r = randomFloat(0.0f, 1.0f);
+					color.g = randomFloat(0.0f, 1.0f);
+					color.b = randomFloat(0.0f, 1.0f);
+				}
+				while (std::ranges::find_if(m_pVertices, [color](const auto& vertex)
+					{ return isSameColor(vertex.color, color); }) != m_pVertices.end());
 
-			faces.push_back(face);
+				for (size_t i = 0; i < 3; ++i)
+				{
+					m_pVertices.push_back({ vertices[triangle.vertexIndices[i] - 1], color });
+					triangle.vertexIndices[i] = m_pVertices.size() - 1;
+				}
+			}
+
 			break;
 		}
 		case CObjFile::ELineType::None:
@@ -159,4 +168,41 @@ CObjFile::ELineType CObjFile::getLineType(const std::string& line)
 	{
 		return CObjFile::ELineType::None;
 	}
+}
+
+CObjFile::SFace CObjFile::getFace(const std::string& line)
+{
+	SFace              face;
+	std::istringstream iss(line.substr(2));
+	std::string        vertexIndex;
+
+	while (iss >> vertexIndex)
+	{
+		face.vertexIndices.push_back(std::stoul(vertexIndex));
+	}
+	return face;
+}
+
+STriangles CObjFile::toTriangles(const SFace& face)
+{
+	if (face.vertexIndices.size() < 3)
+	{
+		throw std::runtime_error("Trying to convert to triangles a face with less than 3 vertices");
+	}
+
+	if (face.vertexIndices.size() == 3)
+	{
+		return {{ face.vertexIndices[0], face.vertexIndices[1], face.vertexIndices[2]}};
+	}
+
+	STriangles result;
+	for (size_t i = 0; i < face.vertexIndices.size() - 2; ++i)
+	{
+		result.push_back({
+			face.vertexIndices[0],
+			face.vertexIndices[i + 1],
+			face.vertexIndices[i + 2],
+		});
+	}
+	return result;
 }

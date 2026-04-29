@@ -4,7 +4,7 @@
 #include <string>
 
 // Project headers
-#include "geometric.h"
+#include "types.h"
 #include "object.h"
 
 class CObjFile
@@ -19,10 +19,15 @@ public:
 	//-------------------------------//
 	//- Parameters                  -//
 	//-------------------------------//
+	/*!
+	 * @brief Used to iterate over objects and draw each of them
+	 */
 	CObjects getObjects() const { return m_pObjects; }
-	SVertices getPositionVertices() const { return m_pPositionVertices; }
-	SVertices getTextureVertices() const { return m_pTextureVertices; }
-	SVertices getNormalVertices() const { return m_pNormalVertices; }
+
+	/*!
+	 * @brief Used to fill the VBO (each vertex = position + color values)
+	 */
+	SVertices getVertices() const { return m_pVertices; }
 
 private:
 	//-------------------------------//
@@ -33,22 +38,30 @@ private:
 		Object,
 		Vertex,
 		Face,
+		
 		Mtllib,
 		Usemtl,
 		SmoothingGroup,
+
 		None,
 	};
+
+	struct SFace
+	{
+		std::vector<size_t> vertexIndices;
+	};
+	using SFaces = std::vector<SFace>;
 
 	//-------------------------------//
 	//- Internal operations         -//
 	//-------------------------------//
-	static ELineType getLineType(const std::string& line);
+	static ELineType  getLineType(const std::string& line);
+	static SFace      getFace(const std::string& line);
+	static STriangles toTriangles(const SFace& face);
 
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//
 	CObjects  m_pObjects;
-	SVertices m_pPositionVertices;
-	SVertices m_pTextureVertices;
-	SVertices m_pNormalVertices;
+	SVertices m_pVertices;
 };

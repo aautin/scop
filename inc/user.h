@@ -5,15 +5,12 @@
 #include <string>
 
 // Project headers
-#include "geometric.h"
+#include "types.h"
 #include "object.h"
 
 struct SUser
 {
 	std::set<int> pressedKeys;
 	CObjects      objects;
-	SVertices     positionVertices;
-	SVertices     textureVertices;
-	SVertices     normalVertices;
 	float         scale = 1.0f;
 };

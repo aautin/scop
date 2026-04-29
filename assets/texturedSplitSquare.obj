@@ -1,0 +1,18 @@
+mtllib material/cat.mtl
+o square
+v 0 0 0     # Bottom left
+v 1 0 0     # Bottom right
+v 0 1 0     # Top left
+v 1 1 0     # Top right
+v 0.5 0.5 0 # Center
+vt 1 0      # Bottom right
+vt 0 1      # Top left
+vt 1 1      # Top right
+vt 0.5 0.5  # Center
+usemtl CatMaterial
+f 3/2 4/3 2/1
+f 3/1 5/4 1/3
+f 5/4 1/3 2/2
+
+# 7 unique couples of position-texture vertices
+# should display a square with a texture, the lower part must be reversed

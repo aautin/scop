@@ -11,7 +11,6 @@ GLFW_LIB	:=	glfw/build/src/libglfw3.a
 GLFW_INC	:=	glfw/include/
 
 SRC_FILES	:=	\
-				geometric.cpp \
 				glfwHandling.cpp \
 				object.cpp \
 				objFile.cpp \
