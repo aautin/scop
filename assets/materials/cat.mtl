@@ -5,6 +5,3 @@ Ks 0.0 0.0 0.0      # Specular color (black, no specular highlights)
 Ns 0.0              # Shininess (0 = no specular highlights)
 d 1.0               # Dissolve (1.0 = fully opaque)
 illum 1             # Illumination model (1 = diffuse only)
-
-# Reference the texture for diffuse color
-map_Kd textures/plankoCat.png

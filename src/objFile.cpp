@@ -8,20 +8,25 @@
 #include <stdexcept>
 #include <algorithm>
 #include <ranges>
-#include <random>
+#include <filesystem>
+#include <iostream>
 
-static float randomFloat(float min, float max)
+namespace fs = std::filesystem;
+
+//-------------------------------//
+//- Parsing                     -//
+//-------------------------------//
+static std::string resolveMTLPath(const std::string& objFilePath, const std::string& mtllibPath)
 {
-	static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+    fs::path objDir = fs::path(objFilePath).parent_path();
+    fs::path mtlPath = mtllibPath;
 
-    return dis(gen);
-}
+    if (!mtlPath.is_absolute())
+	{
+        mtlPath = objDir / mtlPath;
+    }
 
-static bool isSameColor(const SColor& color1, const SColor& color2)
-{
-	return color1.r == color2.r && color1.g == color2.g && color1.b == color2.b;
+    return fs::absolute(mtlPath).lexically_normal().string();
 }
 
 static void removeComments(std::string& line)
@@ -33,12 +38,75 @@ static void removeComments(std::string& line)
 	}
 }
 
+static SMaterialsMap parseMtlFile(const std::string& filename, const std::string& directory)
+{
+	SMaterialsMap materials;
+	std::ifstream file(filename);
+	if (!file.is_open())
+	{
+		throw std::runtime_error(std::format("Failed to open material file: {}", filename));
+	}
+
+	std::string currentMaterialName;
+	for (std::string line; std::getline(file, line);)
+	{
+		removeComments(line);
+		if (line.empty())
+		{
+			continue;
+		}
+
+		if (line.starts_with("newmtl "))
+		{
+			char buffer[256];
+			sscanf(line.c_str(), "newmtl %s", buffer);
+			currentMaterialName = buffer;
+			materials[currentMaterialName] = SMaterial{};
+		}
+		else if (line.starts_with("Ka "))
+		{
+			sscanf(line.c_str(), "Ka %f %f %f", &materials[currentMaterialName].ambientColor.r,
+											    &materials[currentMaterialName].ambientColor.g,
+											    &materials[currentMaterialName].ambientColor.b);
+		}
+		else if (line.starts_with("Kd "))
+		{
+			sscanf(line.c_str(), "Kd %f %f %f", &materials[currentMaterialName].diffuseColor.r,
+											    &materials[currentMaterialName].diffuseColor.g,
+											    &materials[currentMaterialName].diffuseColor.b);
+		}
+		else if (line.starts_with("Ks "))
+		{
+			sscanf(line.c_str(), "Ks %f %f %f", &materials[currentMaterialName].specularColor.r,
+											    &materials[currentMaterialName].specularColor.g,
+											    &materials[currentMaterialName].specularColor.b);
+		}
+		else if (line.starts_with("Ns "))
+		{
+			sscanf(line.c_str(), "Ns %f", &materials[currentMaterialName].specularExponent);
+		}
+		else if (line.starts_with("Ni "))
+		{
+			sscanf(line.c_str(), "Ni %f", &materials[currentMaterialName].opticalDensity);
+		}
+		else if (line.starts_with("d "))
+		{
+			sscanf(line.c_str(), "d %f", &materials[currentMaterialName].dissolve);
+		}
+		else if (line.starts_with("illum "))
+		{
+			sscanf(line.c_str(), "illum %d", &materials[currentMaterialName].illuminationModel);
+		}
+	}
+	return materials;
+}
+
 static std::string getObjectName(const std::string& line)
 {
 	return line.substr(2);
 }
 
-static SPositionVertex getVertexPosition(const std::string& line)
+static SPositionVertex getPositionVertex(const std::string& line)
 {
 	SPositionVertex vertex;
 	sscanf(line.c_str(), "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
@@ -48,16 +116,26 @@ static SPositionVertex getVertexPosition(const std::string& line)
 //-------------------------------//
 //- Constructors / Destructors  -//
 //-------------------------------//
-CObjFile::CObjFile(const std::string& filename)
+CObjFile::CObjFile(const std::string& filename):
+m_pUsedMaterials{{"default", SMaterial{}}}
 {
 	if (filename.compare(filename.length() - 4, 4, ".obj"))
 	{
 		throw std::runtime_error("Only .obj files are supported");
 	}
-	
-	SPositionVertices vertices;
-	
+	if (!fs::exists(filename))
+	{
+		throw std::runtime_error(std::format("File {} does not exist", filename));
+	}
+
+	SPositionVerticesVec importedVertices;
+	SMaterialsMap 	     importedMaterials = m_pUsedMaterials;
+
+	SMaterialName inUseMaterialName = m_pUsedMaterials.begin()->first;
+	SObjectName	  inUseObjectName;
+
 	auto fileContent = std::ifstream(filename);
+	char nameBuffer[256];
 	for (std::string line; std::getline(fileContent, line);)
 	{
 		removeComments(line);
@@ -70,7 +148,27 @@ CObjFile::CObjFile(const std::string& filename)
 		switch (lineType)
 		{
 		case CObjFile::ELineType::Mtllib:
+		{
+			sscanf(line.c_str(), "mtllib %s", nameBuffer);
+			auto materials = parseMtlFile(resolveMTLPath(filename, nameBuffer), fs::path(filename).parent_path().string());
+			importedMaterials.insert(materials.begin(), materials.end());
+			break;
+		}
 		case CObjFile::ELineType::Usemtl:
+		{
+			sscanf(line.c_str(), "usemtl %s", nameBuffer);
+			if (!importedMaterials.contains(nameBuffer))
+			{
+				throw std::runtime_error(std::format("Material {} not found in ! file", nameBuffer));
+			}
+
+			if (!m_pUsedMaterials.contains(nameBuffer))
+			{
+				m_pUsedMaterials[nameBuffer] = importedMaterials[nameBuffer];
+			}
+			inUseMaterialName = nameBuffer;
+			break;
+		}
 		case CObjFile::ELineType::SmoothingGroup:
 		{
 			//
@@ -80,46 +178,41 @@ CObjFile::CObjFile(const std::string& filename)
 		}
 		case CObjFile::ELineType::Object:
 		{
-			m_pObjects.push_back(getObjectName(line));
+			inUseObjectName = getObjectName(line);
 			break;
 		}
 		case CObjFile::ELineType::Vertex:
 		{
-			vertices.push_back(getVertexPosition(line));
+			importedVertices.push_back(getPositionVertex(line));
 			break;
 		}
 		case CObjFile::ELineType::Face:
 		{
-			if (m_pObjects.empty())
+			if (inUseObjectName.empty())
 			{
-				throw std::runtime_error("Face defined before object");
+				throw std::runtime_error("A face is defined before any object");
 			}
 			
 			auto face = getFace(line);
 			for (const auto& index : face.vertexIndices)
 			{
-				if (index == 0 || index > vertices.size())
+				if (index == 0 || index > importedVertices.size())
 				{
 					throw std::runtime_error(std::format("Face with a non existing index : {} ({})", line, index));
 				}
 			}
 			for (auto& triangle : toTriangles(face))
 			{
-				SColor color;
-				do
-				{
-					color.r = randomFloat(0.0f, 1.0f);
-					color.g = randomFloat(0.0f, 1.0f);
-					color.b = randomFloat(0.0f, 1.0f);
-				}
-				while (std::ranges::find_if(m_pVertices, [color](const auto& vertex)
-					{ return isSameColor(vertex.color, color); }) != m_pVertices.end());
-
+				//
+				// Push the triangle vertices to the used vertices
+				// Update triangle vertex indices to match the used vertices list indices
+				//
 				for (size_t i = 0; i < 3; ++i)
 				{
-					m_pVertices.push_back({ vertices[triangle.vertexIndices[i] - 1], color });
-					triangle.vertexIndices[i] = m_pVertices.size() - 1;
+					m_pUsedVertices.push_back({ importedVertices[triangle.vertexIndices[i] - 1] });
+					triangle.vertexIndices[i] = m_pUsedVertices.size() - 1;
 				}
+				m_pObjects[inUseObjectName].materialGroups[inUseMaterialName].push_back(triangle);
 			}
 
 			break;
@@ -129,9 +222,9 @@ CObjFile::CObjFile(const std::string& filename)
 		}
 	}
 
-	if (objectName)
+	if (m_pObjects.empty())
 	{
-		m_pObjects.push_back(CObject(*objectName, faces));
+		throw std::runtime_error("No object defined in the file");
 	}
 }
 
@@ -183,7 +276,7 @@ CObjFile::SFace CObjFile::getFace(const std::string& line)
 	return face;
 }
 
-STriangles CObjFile::toTriangles(const SFace& face)
+STrianglesVec CObjFile::toTriangles(const SFace& face)
 {
 	if (face.vertexIndices.size() < 3)
 	{
@@ -195,7 +288,7 @@ STriangles CObjFile::toTriangles(const SFace& face)
 		return {{ face.vertexIndices[0], face.vertexIndices[1], face.vertexIndices[2]}};
 	}
 
-	STriangles result;
+	STrianglesVec result;
 	for (size_t i = 0; i < face.vertexIndices.size() - 2; ++i)
 	{
 		result.push_back({

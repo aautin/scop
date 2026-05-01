@@ -1,3 +1,5 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 // STL headers
 #include <chrono>
 #include <iostream>
@@ -15,8 +17,7 @@
 #include "user.h"
 #include "objFile.h"
 #include "stbImage.h"
-
-#define VERTICE_FLOAT_COUNT 6 // 3 for position and 3 for color
+#include "vertex.h"
 
 static std::string get_file_contents(const char* filename)
 {
@@ -34,38 +35,13 @@ static std::string get_file_contents(const char* filename)
 	throw(errno);
 }
 
-
-template <typename T>
-struct SPtr
-{
-	size_t size;
-	T*     data;
-};
-
 static void loadFile(SUser& user, const std::string& filename)
 {
 	CObjFile file(filename);
+
 	user.objects = file.getObjects();
-	user.vertices = file.getVertices();
-}
-
-static void handleKeys(SUser& user, GLFWwindow* window)
-{
-	if (user.pressedKeys.contains(GLFW_KEY_ESCAPE))
-	{
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	}
-
-	if (user.pressedKeys.contains(GLFW_KEY_UP))
-	{
-		std::cout << "UP key is pressed" << std::endl;
-		user.scale += 0.01f;
-	}
-	else if (user.pressedKeys.contains(GLFW_KEY_DOWN))
-	{
-		std::cout << "DOWN key is pressed" << std::endl;
-		user.scale -= 0.01f;
-	}
+	user.vertices = file.getUsedVertices();
+	user.materials = file.getUsedMaterials();
 }
 
 int main(int argc, char** argv)
@@ -75,7 +51,7 @@ int main(int argc, char** argv)
 	//-------------------------------//
 	if (argc != 2)
 	{
-		std::cout << "Usage: " << argv[0] << " <file.obj>" << std::endl;
+		std::cerr << "Usage: " << argv[0] << " <file.obj>" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -117,7 +93,7 @@ int main(int argc, char** argv)
 
 	
 	glfwSetWindowUserPointer(window, &user);
-	glfwSetKeyCallback(window, keyCallback);
+	glfwSetKeyCallback(window, keyReleaseHandler);
 
 	//-------------------------------//
 	//- Vertex and fragment shaders -//
@@ -148,97 +124,94 @@ int main(int argc, char** argv)
 	glDeleteShader(fragmentShader);
 
 	//-------------------------------//
-	//- Vertices and indices buffers-//
+	//- Vertices properties         -//
 	//-------------------------------//
-	SPtr<GLfloat> vertices =
-	{
-		(user.vertices.size() * VERTICE_FLOAT_COUNT) * sizeof(GLfloat),
-		new GLfloat[user.vertices.size() * VERTICE_FLOAT_COUNT],
-	};
-
-	size_t indicesCount = 0;
-	for (auto& object : user.objects) { indicesCount += object.getTriangles().size() * 3; }
-	SPtr<GLuint> indices =
-	{
-		indicesCount * sizeof(GLuint),
-		new GLuint[indicesCount],
-	};
-
-	{
-		size_t index = 0;
-		for (const auto& vertex : user.vertices)
-		{
-			auto chrono = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-			vertices.data[index++] = vertex.x;
-			vertices.data[index++] = vertex.y;
-			vertices.data[index++] = vertex.z;
-			
-			vertices.data[index++] = std::abs(std::sin(chrono));
-			vertices.data[index++] = std::abs(std::cos(chrono));
-			vertices.data[index++] = std::abs(std::tan(chrono));
-		}
-	}
-
-	{
-		size_t index = 0;
-		for (const auto& object : user.objects)
-		{
-			for (const auto& triangle : object.getTriangles())
-			{
-				indices.data[index++] = triangle.verticesIndices[0] - 1;
-				indices.data[index++] = triangle.verticesIndices[1] - 1;
-				indices.data[index++] = triangle.verticesIndices[2] - 1;
-			}
-		}
-	}
+	//
+	// Every triangle must have a different color than the surrounding triangles
+	// Texture is stretched to fit the whole object on x and y axis, z is ignored
+	//
+	SDimension dimension = getDimension(user.vertices);
+	assignDistinguishableColors(user.objects, user.vertices);
+	assignTextureCoordinates(user.vertices, dimension);
 
 	//-------------------------------//
 	//- Bindings                    -//
 	//-------------------------------//
-	GLuint VAO, VBO, EBO;
+	GLuint VAO, VBO;
 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
 
+	//
+	// We bind the vertex array object first because it store the buffers bindings
+	//
 	glBindVertexArray(VAO);
 
 	//
 	// We use a vertex buffer object to store vertices in GPU memory
 	//
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size, vertices.data, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, user.vertices.size() * sizeof(SVertex), user.vertices.data(), GL_STATIC_DRAW);
 	
 	//
-	// Location 0 in source shader, 3 floats for color, no padding
+	// Location 0 in source shader, 3 floats for color, structure declaration padding
 	//
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTICE_FLOAT_COUNT * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(SVertex), (void*)offsetof(SVertex, position));
 	glEnableVertexAttribArray(0);
 
 	//
-	// Location 1 in source shader, 3 floats for color, 3-floats padded (position)
+	// Location 1 in source shader, 3 floats for color, structure declaration padding
 	//
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTICE_FLOAT_COUNT * sizeof(GLfloat), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(SVertex), (void*)offsetof(SVertex, color));
 	glEnableVertexAttribArray(1);
 
 	//
-	// We use an element buffer to reuse vertices for multiple triangles
+	// Location 2 in source shader, 2 floats for texture, structure declaration padding
 	//
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size, indices.data, GL_STATIC_DRAW);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(SVertex), (void*)offsetof(SVertex, texture));
+	glEnableVertexAttribArray(2);
 
 	//
 	// Unbind to prevent accidental modifications
 	// Note: EBO shouldnt be unbound while VAO still bound, because VAO stores EBO binding
 	glBindBuffer(GL_ARRAY_BUFFER, 0);         // Unbind VBO
 	glBindVertexArray(0);                     // Unbind VAO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Unbind EBO
 
 	//-------------------------------//
 	//- Textures                    -//
 	//-------------------------------//
+	//
+	// Load the texture data and its properties
+	// Reverse the image on y axis to match OpenGL texture coordinates
+	//
+	stbi_set_flip_vertically_on_load(true);
 	
+	int width, height, channels;
+	unsigned char* textureData = stbi_load("assets/materials/textures/plankoCat.png", &width, &height, &channels, 0);
 	
+	//
+	// Generate one texture
+	//
+	GLuint texture;
+	glGenTextures(1, &texture);
+
+	//
+	// Bind the texture to configure, and set its properties
+	//
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+
+	//
+	// Set the texture mipmap (optimization for rendering textures far from the camera)
+	//
+	glGenerateMipmap(GL_TEXTURE_2D);
+	
+	//
+	// Unbind the texture for the good practice and free the texture data from CPU memory
+	//
+	glBindTexture(GL_TEXTURE_2D, 0);
+	stbi_image_free(textureData);
+
 	//-------------------------------//
 	//- Uniforms                    -//
 	//-------------------------------//
@@ -247,6 +220,15 @@ int main(int argc, char** argv)
 	// shader program scope, updating a uniform can only be done between drawing calls
 	//
 	GLuint scaleId = glGetUniformLocation(shaderProgram, "scale");
+	GLuint useTextureId = glGetUniformLocation(shaderProgram, "uUseTexture");
+	
+	GLuint KaId    = glGetUniformLocation(shaderProgram, "Ka");
+	GLuint KdId    = glGetUniformLocation(shaderProgram, "Kd");
+	GLuint KsId    = glGetUniformLocation(shaderProgram, "Ks");
+	GLuint NsId    = glGetUniformLocation(shaderProgram, "Ns");
+	GLuint NiId    = glGetUniformLocation(shaderProgram, "Ni");
+	GLuint dId     = glGetUniformLocation(shaderProgram, "d");
+	GLuint illumId = glGetUniformLocation(shaderProgram, "illum");
 
 	//-------------------------------//
 	//- Main loop (events and draw) -//
@@ -258,13 +240,39 @@ int main(int argc, char** argv)
 
 		glUseProgram(shaderProgram);
 		glUniform1f(scaleId, user.scale);
+		glUniform1i(useTextureId, user.useTexture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		for (const auto& [materialName, material] : user.materials)
+		{
+			glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
+			glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
+			glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
+			glUniform1f(NsId, material.specularExponent);
+			glUniform1f(NiId, material.opticalDensity);
+			glUniform1f(dId, material.dissolve);
+			glUniform1i(illumId, material.illuminationModel);
+
+			for (const auto& [objectName, object] : user.objects)
+			{
+				if (!object.materialGroups.contains(materialName))
+				{
+					continue;
+				}
+
+				for (const auto& triangle : object.materialGroups.at(materialName))
+				{
+					glDrawArrays(GL_TRIANGLES, triangle.vertexIndices[0], 3);
+				}
+			}
+		}
 
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 		glfwSwapBuffers(window);
 
 		glfwPollEvents();
-		handleKeys(user, window);
+		handlePressedKeys(window);
 	}
 
 	//-------------------------------//

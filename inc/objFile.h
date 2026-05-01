@@ -5,7 +5,6 @@
 
 // Project headers
 #include "types.h"
-#include "object.h"
 
 class CObjFile
 {
@@ -22,12 +21,17 @@ public:
 	/*!
 	 * @brief Used to iterate over objects and draw each of them
 	 */
-	CObjects getObjects() const { return m_pObjects; }
+	SObjectsMap getObjects() const { return m_pObjects; }
 
 	/*!
 	 * @brief Used to fill the VBO (each vertex = position + color values)
 	 */
-	SVertices getVertices() const { return m_pVertices; }
+	SVerticesVec getUsedVertices() const { return m_pUsedVertices; }
+
+	/*!
+	 * @brief Used to switch between materials when objects are drawn
+	 */
+	SMaterialsMap getUsedMaterials() const { return m_pUsedMaterials; }
 
 private:
 	//-------------------------------//
@@ -55,13 +59,14 @@ private:
 	//-------------------------------//
 	//- Internal operations         -//
 	//-------------------------------//
-	static ELineType  getLineType(const std::string& line);
-	static SFace      getFace(const std::string& line);
-	static STriangles toTriangles(const SFace& face);
+	static ELineType     getLineType(const std::string& line);
+	static SFace         getFace(const std::string& line);
+	static STrianglesVec toTriangles(const SFace& face);
 
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//
-	CObjects  m_pObjects;
-	SVertices m_pVertices;
+	SObjectsMap   m_pObjects;
+	SVerticesVec  m_pUsedVertices;
+	SMaterialsMap m_pUsedMaterials = {{"default", SMaterial{}}};
 };

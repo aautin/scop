@@ -6,11 +6,13 @@
 
 // Project headers
 #include "types.h"
-#include "object.h"
 
 struct SUser
 {
-	std::set<int> pressedKeys;
-	CObjects      objects;
-	float         scale = 1.0f;
+	SObjectsMap   objects;
+	SVerticesVec  vertices;
+	SMaterialsMap materials;
+
+	float scale = 1.0f;
+	bool  useTexture = false;
 };

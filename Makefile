@@ -12,9 +12,9 @@ GLFW_INC	:=	glfw/include/
 
 SRC_FILES	:=	\
 				glfwHandling.cpp \
-				object.cpp \
 				objFile.cpp \
 				glad.cpp \
+				vertex.cpp \
 				main.cpp
 				
 OBJ_FILES	:=	$(SRC_FILES:.cpp=.o)
