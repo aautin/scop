@@ -13,6 +13,12 @@ struct SPositionVertex
 {
 	float x, y, z;
 	bool operator==(const auto& v) const { return x == v.x && y == v.y && z == v.z; }
+	bool operator<(const auto& v) const
+	{
+		if (x != v.x) return x < v.x;
+		if (y != v.y) return y < v.y;
+		return z < v.z;
+	}
 };
 using SPositionVerticesVec = std::vector<SPositionVertex>;
 

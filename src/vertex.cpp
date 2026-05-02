@@ -8,11 +8,12 @@
 
 namespace rg = std::ranges;
 
-static float randomFloat(float min, float max)
+template <typename T>
+static T random(T min, T max)
 {
 	static std::random_device rd;
     static std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> dis(min, max);
+	std::uniform_real_distribution<T> dis(min, max);
 
 	return dis(gen);
 }
@@ -36,24 +37,29 @@ SDimension getDimension(const SVerticesVec& vertices)
 
 void assignDistinguishableColors(const SObjectsMap& objects, SVerticesVec& vertices)
 {
-	std::set<float> usedColors;
+	std::map<SPositionVertex, float> usedColors;
 	for (const auto& object : objects)
 	{
 		for (const auto& [materialName, triangles] : object.second.materialGroups)
 		{
 			for (const auto& triangle : triangles)
 			{
+				SPositionVerticesVec trianglesVertices;
+				for (size_t i = 0; i < 3; ++i)
+				{
+					trianglesVertices.push_back(vertices[triangle.vertexIndices[i]].position);
+				}
 				float color;
 				do
 				{
-					color = randomFloat(0.0f, 1.0f);
+					color = random<float>(0.0f, 1.0f);
 				}
-				while (usedColors.contains(color));
+				while (rg::any_of(trianglesVertices, [&](auto vertex) { return usedColors[vertex] == color; }));
 
-				usedColors.insert(color);
 				for (size_t i = 0; i < 3; ++i)
 				{
 					vertices[triangle.vertexIndices[i]].color = { color, color, color };
+					usedColors[trianglesVertices[i]] = color;
 				}
 			}
 		}
