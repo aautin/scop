@@ -36,26 +36,24 @@ SDimension getDimension(const SVerticesVec& vertices)
 
 void assignDistinguishableColors(const SObjectsMap& objects, SVerticesVec& vertices)
 {
-	SColorsSet usedColors;
+	std::set<float> usedColors;
 	for (const auto& object : objects)
 	{
 		for (const auto& [materialName, triangles] : object.second.materialGroups)
 		{
 			for (const auto& triangle : triangles)
 			{
-				SColor color;
+				float color;
 				do
 				{
-					color.r = randomFloat(0.0f, 1.0f);
-					color.g = randomFloat(0.0f, 1.0f);
-					color.b = randomFloat(0.0f, 1.0f);
+					color = randomFloat(0.0f, 1.0f);
 				}
 				while (usedColors.contains(color));
 
 				usedColors.insert(color);
 				for (size_t i = 0; i < 3; ++i)
 				{
-					vertices[triangle.vertexIndices[i]].color = color;
+					vertices[triangle.vertexIndices[i]].color = { color, color, color };
 				}
 			}
 		}
