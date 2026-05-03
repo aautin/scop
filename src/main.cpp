@@ -129,10 +129,12 @@ int main(int argc, char** argv)
 	//
 	// Every triangle must have a different color than the surrounding triangles
 	// Texture is stretched to fit the whole object on x and y axis, z is ignored
+	// Center the object on the origin to make it easier to rotate around its center
 	//
 	SDimension dimension = getDimension(user.vertices);
 	assignDistinguishableColors(user.objects, user.vertices);
 	assignTextureCoordinates(user.vertices, dimension);
+	centerVerticesOnOrigin(user.vertices, dimension);
 
 	//-------------------------------//
 	//- Bindings                    -//
@@ -219,7 +221,6 @@ int main(int argc, char** argv)
 	// We uniforms to have shared variables between CPU and GPU, they're global to the
 	// shader program scope, updating a uniform can only be done between drawing calls
 	//
-	GLuint scaleId = glGetUniformLocation(shaderProgram, "scale");
 	GLuint useTextureId = glGetUniformLocation(shaderProgram, "uUseTexture");
 	
 	GLuint KaId    = glGetUniformLocation(shaderProgram, "Ka");
@@ -230,16 +231,20 @@ int main(int argc, char** argv)
 	GLuint dId     = glGetUniformLocation(shaderProgram, "d");
 	GLuint illumId = glGetUniformLocation(shaderProgram, "illum");
 
+	GLuint modelMatrixId = glGetUniformLocation(shaderProgram, "modelMatrix");
+	GLuint viewMatrixId = glGetUniformLocation(shaderProgram, "viewMatrix");
+	GLuint projectionMatrixId = glGetUniformLocation(shaderProgram, "projectionMatrix");
+
+	glEnable(GL_DEPTH_TEST);
 	//-------------------------------//
 	//- Main loop (events and draw) -//
 	//-------------------------------//
 	while (!glfwWindowShouldClose(window))
 	{
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shaderProgram);
-		glUniform1f(scaleId, user.scale);
 		glUniform1i(useTextureId, user.useTexture);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -253,6 +258,10 @@ int main(int argc, char** argv)
 			glUniform1f(NiId, material.opticalDensity);
 			glUniform1f(dId, material.dissolve);
 			glUniform1i(illumId, material.illuminationModel);
+
+			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, &user.modelMatrix[0][0]);
+			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, &user.viewMatrix[0][0]);
+			glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, &user.projectionMatrix[0][0]);
 
 			for (const auto& [objectName, object] : user.objects)
 			{

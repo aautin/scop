@@ -20,3 +20,4 @@ SDimension getDimension(const SVerticesVec &vertices);
 //-------------------------------//
 void assignDistinguishableColors(const SObjectsMap& objects, SVerticesVec& vertices);
 void assignTextureCoordinates(SVerticesVec &vertices, const SDimension &dimension);
+void centerVerticesOnOrigin(SVerticesVec& vertices, const SDimension& dimension);

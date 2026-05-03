@@ -74,3 +74,13 @@ void assignTextureCoordinates(SVerticesVec& vertices, const SDimension& dimensio
 		vertex.texture.v = (vertex.position.y - dimension.minY) / dimension.height();
 	}
 }
+
+void centerVerticesOnOrigin(SVerticesVec& vertices, const SDimension& dimension)
+{
+	for (SVertex& vertex : vertices)
+	{
+		vertex.position.x -= dimension.centerX;
+		vertex.position.y -= dimension.centerY;
+		vertex.position.z -= dimension.centerZ;
+	}
+}

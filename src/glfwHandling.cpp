@@ -1,5 +1,8 @@
 #include "glfwHandling.h"
 
+// STL headers
+#include <algorithm>
+
 void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
@@ -20,14 +23,92 @@ void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, in
 void handlePressedKeys(GLFWwindow* window)
 {
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
-	
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+
+	const std::map<EInputAction, std::set<int>> keyBindings = {
+		{MOVE_VIEW_DOWN, {GLFW_KEY_S}},
+		{MOVE_VIEW_UP, {GLFW_KEY_W}},
+		{MOVE_VIEW_LEFT, {GLFW_KEY_A}},
+		{MOVE_VIEW_RIGHT, {GLFW_KEY_D}},
+		
+		{ROTATE_MODEL_X_POS, {GLFW_KEY_X, GLFW_KEY_UP}},
+		{ROTATE_MODEL_X_NEG, {GLFW_KEY_X, GLFW_KEY_DOWN}},
+		{ROTATE_MODEL_Y_POS, {GLFW_KEY_Y, GLFW_KEY_UP}},
+		{ROTATE_MODEL_Y_NEG, {GLFW_KEY_Y, GLFW_KEY_DOWN}},
+		{ROTATE_MODEL_Z_POS, {GLFW_KEY_Z, GLFW_KEY_UP}},
+		{ROTATE_MODEL_Z_NEG, {GLFW_KEY_Z, GLFW_KEY_DOWN}},
+		
+		{SWITCH_VIEW_MODE,   {GLFW_KEY_M}},
+		{CLOSE_APPLICATION,  {GLFW_KEY_ESCAPE}},
+	};
+
+	for (const auto& [action, keys] : keyBindings)
 	{
-		user->scale *= 1.01f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	{
-		user->scale /= 1.01f;
+		if (std::all_of(keys.begin(), keys.end(), [&](int key) { return glfwGetKey(window, key) == GLFW_PRESS; }))
+		{
+			switch (action)
+			{
+				case MOVE_VIEW_DOWN:
+				{
+					user->viewMatrix = glm::translate(user->viewMatrix, glm::vec3(0.0f, 0.0f, -0.1f));
+					break;
+				}
+				case MOVE_VIEW_UP:
+				{
+					user->viewMatrix = glm::translate(user->viewMatrix, glm::vec3(0.0f, 0.0f, 0.1f));
+					break;
+				}
+				case MOVE_VIEW_LEFT:
+				{
+					user->viewMatrix = glm::translate(user->viewMatrix, glm::vec3(0.1f, 0.0f, 0.0f));
+					break;
+				}
+				case MOVE_VIEW_RIGHT:
+				{
+					user->viewMatrix = glm::translate(user->viewMatrix, glm::vec3(-0.1f, 0.0f, 0.0f));
+					break;
+				}
+				case ROTATE_MODEL_X_POS:
+				{
+					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+					break;
+				}
+				case ROTATE_MODEL_X_NEG:
+				{
+					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					break;
+				}
+				case ROTATE_MODEL_Y_POS:
+				{
+					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+					break;
+				}
+				case ROTATE_MODEL_Y_NEG:
+				{
+					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					break;
+				}
+				case ROTATE_MODEL_Z_POS:
+				{
+					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+					break;
+				}
+				case ROTATE_MODEL_Z_NEG:
+				{
+					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+					break;
+				}
+				case SWITCH_VIEW_MODE:
+				{
+					user->useTexture = !user->useTexture;
+					break;
+				}
+				case CLOSE_APPLICATION:
+				{
+					glfwSetWindowShouldClose(window, true);
+					break;
+				}
+			}
+		}
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)

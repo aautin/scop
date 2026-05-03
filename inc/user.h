@@ -13,6 +13,9 @@ struct SUser
 	SVerticesVec  vertices;
 	SMaterialsMap materials;
 
-	float scale = 1.0f;
 	bool  useTexture = false;
+
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
+	glm::mat4 viewMatrix  = glm::mat4(1.0f);
+	glm::mat4 projectionMatrix = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 };
