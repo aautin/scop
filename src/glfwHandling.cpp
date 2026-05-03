@@ -2,20 +2,26 @@
 
 // STL headers
 #include <algorithm>
+#include <functional>
 
 void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
 
+
+	const std::map<int, std::function<void()>> keyBindings = {
+		{GLFW_KEY_M, [user](){ user->useTexture = !user->useTexture; }},
+	};
+
 	if (action == GLFW_RELEASE)
 	{
-		switch (key)
+		for (const auto& binding : keyBindings)
 		{
-			case GLFW_KEY_M:
-				user->useTexture = !user->useTexture;
+			if (binding.first == key)
+			{
+				binding.second();
 				break;
-			default:
-				break;
+			}
 		}
 	}
 }
@@ -24,7 +30,7 @@ void handlePressedKeys(GLFWwindow* window)
 {
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
 
-	const std::map<EInputAction, std::set<int>> keyBindings = {
+	const std::map<EPressInputAction, std::set<int>> keyBindings = {
 		{MOVE_VIEW_DOWN, {GLFW_KEY_S}},
 		{MOVE_VIEW_UP, {GLFW_KEY_W}},
 		{MOVE_VIEW_LEFT, {GLFW_KEY_A}},
@@ -37,7 +43,6 @@ void handlePressedKeys(GLFWwindow* window)
 		{ROTATE_MODEL_Z_POS, {GLFW_KEY_Z, GLFW_KEY_UP}},
 		{ROTATE_MODEL_Z_NEG, {GLFW_KEY_Z, GLFW_KEY_DOWN}},
 		
-		{SWITCH_VIEW_MODE,   {GLFW_KEY_M}},
 		{CLOSE_APPLICATION,  {GLFW_KEY_ESCAPE}},
 	};
 
@@ -97,11 +102,6 @@ void handlePressedKeys(GLFWwindow* window)
 					user->modelMatrix = glm::rotate(user->modelMatrix, glm::radians(5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 					break;
 				}
-				case SWITCH_VIEW_MODE:
-				{
-					user->useTexture = !user->useTexture;
-					break;
-				}
 				case CLOSE_APPLICATION:
 				{
 					glfwSetWindowShouldClose(window, true);
@@ -109,11 +109,6 @@ void handlePressedKeys(GLFWwindow* window)
 				}
 			}
 		}
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(window, true);
 	}
 }
 

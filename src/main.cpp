@@ -231,8 +231,8 @@ int main(int argc, char** argv)
 	GLuint dId     = glGetUniformLocation(shaderProgram, "d");
 	GLuint illumId = glGetUniformLocation(shaderProgram, "illum");
 
-	GLuint modelMatrixId = glGetUniformLocation(shaderProgram, "modelMatrix");
-	GLuint viewMatrixId = glGetUniformLocation(shaderProgram, "viewMatrix");
+	GLuint modelMatrixId      = glGetUniformLocation(shaderProgram, "modelMatrix");
+	GLuint viewMatrixId       = glGetUniformLocation(shaderProgram, "viewMatrix");
 	GLuint projectionMatrixId = glGetUniformLocation(shaderProgram, "projectionMatrix");
 
 	glEnable(GL_DEPTH_TEST);
