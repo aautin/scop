@@ -33,6 +33,11 @@ struct STextureVertex
 	float u, v;
 };
 
+struct SNormalVertex
+{
+	float x, y, z;
+};
+
 struct SColor
 {
 	float r, g, b;
@@ -51,6 +56,7 @@ struct SVertex
 	SPositionVertex position;
 	SColor          color;
 	STextureVertex  texture;
+	SNormalVertex   normal;
 };
 using SVerticesVec = std::vector<SVertex>;
 

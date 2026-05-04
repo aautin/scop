@@ -75,6 +75,38 @@ void assignTextureCoordinates(SVerticesVec& vertices, const SDimension& dimensio
 	}
 }
 
+void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices)
+{
+	//
+	// For each triangle, we calculate clockwise and assign the normal vector to its 3 vertices
+	// No smoothing is applied, to be continued...
+	//
+	for (const auto& object : objects)
+	{
+		for (const auto& [materialName, triangles] : object.second.materialGroups)
+		{
+			for (const auto& triangle : triangles)
+			{
+				glm::vec3 v0 = { vertices[triangle.vertexIndices[0]].position.x,
+								 vertices[triangle.vertexIndices[0]].position.y,
+								 vertices[triangle.vertexIndices[0]].position.z };
+				glm::vec3 v1 = { vertices[triangle.vertexIndices[1]].position.x,
+								 vertices[triangle.vertexIndices[1]].position.y,
+								 vertices[triangle.vertexIndices[1]].position.z };
+				glm::vec3 v2 = { vertices[triangle.vertexIndices[2]].position.x,
+								 vertices[triangle.vertexIndices[2]].position.y,
+								 vertices[triangle.vertexIndices[2]].position.z };
+
+				glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+				for (size_t i = 0; i < 3; ++i)
+				{
+					vertices[triangle.vertexIndices[i]].normal = { normal.x, normal.y, normal.z };
+				}
+			}
+		}
+	}
+}
+
 void centerVerticesOnOrigin(SVerticesVec& vertices, const SDimension& dimension)
 {
 	for (SVertex& vertex : vertices)

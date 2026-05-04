@@ -17,6 +17,7 @@ SRC_FILES	:=	\
 				objFile.cpp \
 				glad.cpp \
 				vertex.cpp \
+				matrix.cpp \
 				main.cpp
 				
 OBJ_FILES	:=	$(SRC_FILES:.cpp=.o)

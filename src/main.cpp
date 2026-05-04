@@ -18,6 +18,7 @@
 #include "objFile.h"
 #include "stbImage.h"
 #include "vertex.h"
+#include "matrix.h"
 
 static std::string get_file_contents(const char* filename)
 {
@@ -134,6 +135,7 @@ int main(int argc, char** argv)
 	SDimension dimension = getDimension(user.vertices);
 	assignDistinguishableColors(user.objects, user.vertices);
 	assignTextureCoordinates(user.vertices, dimension);
+	assignNormals(user.objects, user.vertices);
 	centerVerticesOnOrigin(user.vertices, dimension);
 
 	//-------------------------------//
@@ -172,6 +174,12 @@ int main(int argc, char** argv)
 	//
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(SVertex), (void*)offsetof(SVertex, texture));
 	glEnableVertexAttribArray(2);
+
+	//
+	// Location 3 in source shader, 3 floats for normal, structure declaration padding
+	//
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(SVertex), (void*)offsetof(SVertex, normal));
+	glEnableVertexAttribArray(3);
 
 	//
 	// Unbind to prevent accidental modifications
@@ -223,17 +231,22 @@ int main(int argc, char** argv)
 	//
 	GLuint useTextureId = glGetUniformLocation(shaderProgram, "uUseTexture");
 	
-	GLuint KaId    = glGetUniformLocation(shaderProgram, "Ka");
-	GLuint KdId    = glGetUniformLocation(shaderProgram, "Kd");
-	GLuint KsId    = glGetUniformLocation(shaderProgram, "Ks");
-	GLuint NsId    = glGetUniformLocation(shaderProgram, "Ns");
-	GLuint NiId    = glGetUniformLocation(shaderProgram, "Ni");
-	GLuint dId     = glGetUniformLocation(shaderProgram, "d");
-	GLuint illumId = glGetUniformLocation(shaderProgram, "illum");
+	GLuint KaId    = glGetUniformLocation(shaderProgram, "uKa");
+	GLuint KdId    = glGetUniformLocation(shaderProgram, "uKd");
+	GLuint KsId    = glGetUniformLocation(shaderProgram, "uKs");
+	GLuint NsId    = glGetUniformLocation(shaderProgram, "uNs");
+	GLuint NiId    = glGetUniformLocation(shaderProgram, "uNi");
+	GLuint dId     = glGetUniformLocation(shaderProgram, "uD");
+	GLuint illumId = glGetUniformLocation(shaderProgram, "uIllum");
 
-	GLuint modelMatrixId      = glGetUniformLocation(shaderProgram, "modelMatrix");
-	GLuint viewMatrixId       = glGetUniformLocation(shaderProgram, "viewMatrix");
-	GLuint projectionMatrixId = glGetUniformLocation(shaderProgram, "projectionMatrix");
+	GLuint modelMatrixId      = glGetUniformLocation(shaderProgram, "uModelMatrix");
+	GLuint viewMatrixId       = glGetUniformLocation(shaderProgram, "uViewMatrix");
+	GLuint projectionMatrixId = glGetUniformLocation(shaderProgram, "uProjectionMatrix");
+
+	GLuint lightPosId   = glGetUniformLocation(shaderProgram, "uLightPosition");
+	GLuint lightColorId = glGetUniformLocation(shaderProgram, "uLightColor");
+
+	GLuint cameraPositionId = glGetUniformLocation(shaderProgram, "uCameraPosition");
 
 	glEnable(GL_DEPTH_TEST);
 	//-------------------------------//
@@ -249,6 +262,8 @@ int main(int argc, char** argv)
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
+		glm::vec3 cameraPosition = extractCameraPosition(user.viewMatrix);
+
 		for (const auto& [materialName, material] : user.materials)
 		{
 			glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
@@ -259,9 +274,14 @@ int main(int argc, char** argv)
 			glUniform1f(dId, material.dissolve);
 			glUniform1i(illumId, material.illuminationModel);
 
+			glUniform3f(lightPosId, user.lightPosition.x, user.lightPosition.y, user.lightPosition.z);
+			glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
+
 			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, &user.modelMatrix[0][0]);
 			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, &user.viewMatrix[0][0]);
 			glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, &user.projectionMatrix[0][0]);
+
+			glUniform3f(cameraPositionId, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
 			for (const auto& [objectName, object] : user.objects)
 			{
