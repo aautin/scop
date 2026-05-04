@@ -53,10 +53,12 @@ using SColorsSet = std::set<SColor>;
 
 struct SVertex
 {
-	SPositionVertex position;
-	SColor          color;
-	STextureVertex  texture;
-	SNormalVertex   normal;
+	std::optional<size_t> smoothingGroupIndex;
+	SPositionVertex       position;
+	SColor                color;
+	STextureVertex        texture;
+	SNormalVertex         normal;
+	bool                  isSmoothed = false;
 };
 using SVerticesVec = std::vector<SVertex>;
 

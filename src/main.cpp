@@ -135,8 +135,9 @@ int main(int argc, char** argv)
 	SDimension dimension = getDimension(user.vertices);
 	assignDistinguishableColors(user.objects, user.vertices);
 	assignTextureCoordinates(user.vertices, dimension);
-	assignNormals(user.objects, user.vertices);
+	assignNormals(user.objects, user.vertices, true);
 	centerVerticesOnOrigin(user.vertices, dimension);
+	
 
 	//-------------------------------//
 	//- Bindings                    -//

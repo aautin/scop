@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <ranges>
 #include <algorithm>
+#include <iostream>
 
 namespace rg = std::ranges;
 
@@ -75,7 +76,7 @@ void assignTextureCoordinates(SVerticesVec& vertices, const SDimension& dimensio
 	}
 }
 
-void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices)
+void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices, const bool smooth)
 {
 	//
 	// For each triangle, we calculate clockwise and assign the normal vector to its 3 vertices
@@ -101,6 +102,49 @@ void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices)
 				for (size_t i = 0; i < 3; ++i)
 				{
 					vertices[triangle.vertexIndices[i]].normal = { normal.x, normal.y, normal.z };
+				}
+			}
+		}
+	}
+
+	if (smooth)
+	{
+		//
+		// For each vertex position, the normal is the average of all vertices normals
+		// with the same position and the same smoothing group index
+		//
+		for (SVertex& vertex : vertices)
+		{
+			if (!vertex.smoothingGroupIndex.has_value() || vertex.isSmoothed)
+			{
+				continue;
+			}
+
+			glm::vec3 normalSum;
+			size_t count = 0;
+
+			for (SVertex& v : vertices)
+			{
+				if (v.position == vertex.position
+					&& v.smoothingGroupIndex.has_value()
+					&& v.smoothingGroupIndex == vertex.smoothingGroupIndex)
+				{
+					normalSum += glm::vec3(v.normal.x, v.normal.y, v.normal.z);
+					++count;
+				}
+			}
+
+			if (count > 0)
+			{
+				normalSum /= static_cast<float>(count);
+
+				for (SVertex& v : vertices)
+				{
+					if (v.position == vertex.position && v.smoothingGroupIndex == vertex.smoothingGroupIndex)
+					{
+						v.normal = { normalSum.x, normalSum.y, normalSum.z };
+						v.isSmoothed = true;
+					}
 				}
 			}
 		}

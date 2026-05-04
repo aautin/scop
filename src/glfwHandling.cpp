@@ -115,12 +115,12 @@ void handlePressedKeys(GLFWwindow* window)
 				}
 				case MOVE_LIGHT_BACKWARD:
 				{
-					user->lightPosition.z -= 0.1f;
+					user->lightPosition.z += 0.1f;
 					break;
 				}
 				case MOVE_LIGHT_FORWARD:
 				{
-					user->lightPosition.z += 0.1f;
+					user->lightPosition.z -= 0.1f;
 					break;
 				}
 				case MOVE_LIGHT_LEFT:

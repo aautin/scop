@@ -1,5 +1,8 @@
 #include "objFile.h"
 
+// SCL headers
+#include <string.h>
+
 // STL headers
 #include <sstream>
 #include <fstream>
@@ -131,8 +134,9 @@ m_pUsedMaterials{{"default", SMaterial{}}}
 	SPositionVerticesVec importedVertices;
 	SMaterialsMap 	     importedMaterials = m_pUsedMaterials;
 
-	SMaterialName inUseMaterialName = m_pUsedMaterials.begin()->first;
-	SObjectName	  inUseObjectName;
+	SMaterialName         inUseMaterialName = m_pUsedMaterials.begin()->first;
+	SObjectName	          inUseObjectName;
+	std::optional<size_t> inUseSmoothingGroupIndex = std::nullopt;
 
 	auto fileContent = std::ifstream(filename);
 	char nameBuffer[256];
@@ -171,9 +175,15 @@ m_pUsedMaterials{{"default", SMaterial{}}}
 		}
 		case CObjFile::ELineType::SmoothingGroup:
 		{
-			//
-			// Ignored for now
-			//
+			sscanf(line.c_str(), "s %s", nameBuffer);
+			if (strcmp(nameBuffer, "off") == 0)
+			{
+				inUseSmoothingGroupIndex = std::nullopt;
+			}
+			else
+			{
+				inUseSmoothingGroupIndex = std::stoul(nameBuffer);
+			}
 			break;
 		}
 		case CObjFile::ELineType::Object:
@@ -209,7 +219,10 @@ m_pUsedMaterials{{"default", SMaterial{}}}
 				//
 				for (size_t i = 0; i < 3; ++i)
 				{
-					m_pUsedVertices.push_back({ importedVertices[triangle.vertexIndices[i] - 1] });
+					m_pUsedVertices.push_back({
+						inUseSmoothingGroupIndex,
+						importedVertices[triangle.vertexIndices[i] - 1]
+					});
 					triangle.vertexIndices[i] = m_pUsedVertices.size() - 1;
 				}
 				m_pObjects[inUseObjectName].materialGroups[inUseMaterialName].push_back(triangle);
