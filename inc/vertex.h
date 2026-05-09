@@ -19,6 +19,11 @@ SDimension getDimension(const SVerticesVec &vertices);
 //- Complete vertex properties  -//
 //-------------------------------//
 void assignDistinguishableColors(const SObjectsMap& objects, SVerticesVec& vertices);
-void assignTextureCoordinates(SVerticesVec &vertices, const SDimension &dimension);
 void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices,  const bool smooth);
 void centerVerticesOnOrigin(SVerticesVec& vertices, const SDimension& dimension);
+
+/*!
+ * @brief  Assign texture coords to vertices based on position, normal and model dimensions 
+ * @throws std::runtime_error if a vertex has no assigned normal
+*/
+void assignTextureCoordinates(SVerticesVec &vertices, const SDimension &dimension);

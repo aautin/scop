@@ -25,6 +25,8 @@ void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, in
 	}
 }
 
+
+
 void handlePressedKeys(GLFWwindow* window)
 {
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));

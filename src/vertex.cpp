@@ -67,14 +67,6 @@ void assignDistinguishableColors(const SObjectsMap& objects, SVerticesVec& verti
 	}
 }
 
-void assignTextureCoordinates(SVerticesVec& vertices, const SDimension& dimension)
-{
-	for (SVertex& vertex : vertices)
-	{
-		vertex.texture.u = (vertex.position.x - dimension.minX) / dimension.width();
-		vertex.texture.v = (vertex.position.y - dimension.minY) / dimension.height();
-	}
-}
 
 void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices, const bool smooth)
 {
@@ -158,5 +150,35 @@ void centerVerticesOnOrigin(SVerticesVec& vertices, const SDimension& dimension)
 		vertex.position.x -= dimension.centerX;
 		vertex.position.y -= dimension.centerY;
 		vertex.position.z -= dimension.centerZ;
+	}
+}
+
+void assignTextureCoordinates(SVerticesVec& vertices, const SDimension& dimension)
+{
+	for (SVertex& vertex : vertices)
+	{
+		if (vertex.normal.x == 0 && vertex.normal.y == 0 && vertex.normal.z == 0)
+		{
+			throw std::runtime_error("Trying to assign texture coordinates to a vertex with no normal");
+		}
+
+		if (std::abs(vertex.normal.x) > std::abs(vertex.normal.y) && std::abs(vertex.normal.x) > std::abs(vertex.normal.z))
+		{
+			// Projection on yz plane
+			vertex.texture.u = (vertex.position.z - dimension.minZ) / dimension.depth();
+			vertex.texture.v = (vertex.position.y - dimension.minY) / dimension.height();
+		}
+		else if (std::abs(vertex.normal.y) > std::abs(vertex.normal.x) && std::abs(vertex.normal.y) > std::abs(vertex.normal.z))
+		{
+			// Projection on xz plane
+			vertex.texture.u = (vertex.position.x - dimension.minX) / dimension.width();
+			vertex.texture.v = (vertex.position.z - dimension.minZ) / dimension.depth();
+		}
+		else
+		{
+			// Projection on xy plane
+			vertex.texture.u = (vertex.position.x - dimension.minX) / dimension.width();
+			vertex.texture.v = (vertex.position.y - dimension.minY) / dimension.height();
+		}
 	}
 }
