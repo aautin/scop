@@ -120,7 +120,8 @@ static SPositionVertex getPositionVertex(const std::string& line)
 //- Constructors / Destructors  -//
 //-------------------------------//
 CObjFile::CObjFile(const std::string& filename):
-m_pUsedMaterials{{"default", SMaterial{}}}
+m_pUsedMaterials{{"default", SMaterial{}}},
+m_pObjects{{"default", SObject{.name = "default"}}}
 {
 	if (filename.compare(filename.length() - 4, 4, ".obj"))
 	{
@@ -135,7 +136,7 @@ m_pUsedMaterials{{"default", SMaterial{}}}
 	SMaterialsMap 	     importedMaterials = m_pUsedMaterials;
 
 	SMaterialName         inUseMaterialName = m_pUsedMaterials.begin()->first;
-	SObjectName	          inUseObjectName;
+	SObjectName	          inUseObjectName   = m_pObjects.begin()->first;
 	std::optional<size_t> inUseSmoothingGroupIndex = std::nullopt;
 
 	auto fileContent = std::ifstream(filename);
@@ -198,11 +199,6 @@ m_pUsedMaterials{{"default", SMaterial{}}}
 		}
 		case CObjFile::ELineType::Face:
 		{
-			if (inUseObjectName.empty())
-			{
-				throw std::runtime_error("A face is defined before any object");
-			}
-			
 			auto face = getFace(line);
 			for (const auto& index : face.vertexIndices)
 			{
@@ -233,11 +229,6 @@ m_pUsedMaterials{{"default", SMaterial{}}}
 		case CObjFile::ELineType::None:
 			throw std::runtime_error(std::format("Unknown line type: {}", line));
 		}
-	}
-
-	if (m_pObjects.empty())
-	{
-		throw std::runtime_error("No object defined in the file");
 	}
 }
 
