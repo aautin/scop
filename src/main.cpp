@@ -92,9 +92,10 @@ int main(int argc, char** argv)
 
 	glViewport(0, 0, 640, 480);
 
-	
 	glfwSetWindowUserPointer(window, &user);
 	glfwSetKeyCallback(window, keyReleaseHandler);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPosCallback(window, mouseCallback);
 
 	//-------------------------------//
 	//- Vertex and fragment shaders -//
@@ -198,7 +199,7 @@ int main(int argc, char** argv)
 	stbi_set_flip_vertically_on_load(true);
 	
 	int width, height, channels;
-	unsigned char* textureData = stbi_load("assets/materials/textures/plankoCat.png", &width, &height, &channels, 0);
+	unsigned char* textureData = stbi_load("assets/textures/plankoCat.png", &width, &height, &channels, 0);
 	
 	//
 	// Generate one texture
@@ -250,6 +251,8 @@ int main(int argc, char** argv)
 	GLuint cameraPositionId = glGetUniformLocation(shaderProgram, "uCameraPosition");
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LEQUAL);
+
 	//-------------------------------//
 	//- Main loop (events and draw) -//
 	//-------------------------------//
@@ -263,7 +266,7 @@ int main(int argc, char** argv)
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
-		glm::vec3 cameraPosition = extractCameraPosition(user.viewMatrix);
+		auto viewMatrix = getViewMatrix(user);
 
 		for (const auto& [materialName, material] : user.materials)
 		{
@@ -279,10 +282,10 @@ int main(int argc, char** argv)
 			glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
 
 			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, &user.modelMatrix[0][0]);
-			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, &user.viewMatrix[0][0]);
+			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, &viewMatrix[0][0]);
 			glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, &user.projectionMatrix[0][0]);
 
-			glUniform3f(cameraPositionId, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+			glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
 
 			for (const auto& [objectName, object] : user.objects)
 			{

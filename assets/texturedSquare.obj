@@ -1,9 +1,0 @@
-mtllib materials/cat.mtl
-o square
-v 0 0 0   # Bottom left
-v 1 0 0   # Bottom right
-v 0 1 0   # Top left
-v 1 1 0   # Top right
-usemtl CatMaterial
-f 1 2 3
-f 2 3 4

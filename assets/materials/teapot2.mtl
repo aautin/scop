@@ -2,9 +2,9 @@
 # Material Count: 1
 
 newmtl None
-Ns 0                          # Specular exponent
-Ka 0.000000 0.000000 0.000000 # Ambient color (black)
-Kd 0.8 0.8 0.8                # Diffuse color (white)
-Ks 0.8 0.8 0.8                # Specular color (white)
-d 1							  # Dissolve (1.0 is fully opaque)
-illum 2                       # Illumination model (2: diffuse + specular reflections)
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2

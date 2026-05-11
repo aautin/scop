@@ -2,5 +2,7 @@
 
 // Project headers
 #include "types.h"
+#include "user.h"
 
-glm::vec3 extractCameraPosition(const glm::mat4& viewMatrix);
+glm::vec3 cameraFront(float yaw, float pitch);
+glm::mat4 getViewMatrix(const SUser& user);

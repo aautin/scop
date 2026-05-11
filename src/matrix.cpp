@@ -1,10 +1,23 @@
 #include "matrix.h"
 
-glm::vec3 extractCameraPosition(const glm::mat4& viewMatrix)
+glm::vec3 cameraFront(float yaw, float pitch)
 {
-	//
-	// The camera position can be extracted from the view matrix by
-	// negating the translation components of the matrix
-	//
-	return -glm::vec3(viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
+	// Convert to radians
+	float yawRad = glm::radians(yaw);
+	float pitchRad = glm::radians(pitch);
+
+	// Compute front vector
+	glm::vec3 front;
+	front.x = cos(yawRad) * cos(pitchRad);
+	front.y = sin(pitchRad);
+	front.z = sin(yawRad) * cos(pitchRad);
+	return glm::normalize(front);
+}
+
+glm::mat4 getViewMatrix(const SUser& user)
+{
+	glm::vec3 front = cameraFront(user.cameraYaw, user.cameraPitch);
+	glm::vec3 right = glm::normalize(glm::cross(front, user.cameraUp));
+
+    return glm::lookAt(user.cameraPosition, user.cameraPosition + front, user.cameraUp);
 }

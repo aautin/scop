@@ -9,31 +9,11 @@
 
 #include "user.h"
 
-enum EPressInputAction
-{
-	MOVE_VIEW_BACKWARD,
-	MOVE_VIEW_FORWARD,
-	MOVE_VIEW_LEFT,
-	MOVE_VIEW_RIGHT,
-
-	MOVE_LIGHT_BACKWARD,
-	MOVE_LIGHT_FORWARD,
-	MOVE_LIGHT_LEFT,
-	MOVE_LIGHT_RIGHT,
-	
-	ROTATE_MODEL_X_POS,
-	ROTATE_MODEL_X_NEG,
-	ROTATE_MODEL_Y_POS,
-	ROTATE_MODEL_Y_NEG,
-	ROTATE_MODEL_Z_POS,
-	ROTATE_MODEL_Z_NEG,
-
-	CLOSE_APPLICATION,
-};
-
+typedef std::set<int> Keys; 
 
 void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, int mods);
 void handlePressedKeys(GLFWwindow* window);
+void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void errorCallback(int code, const char* description);
 void compileShaderErrors(GLuint shader, const char* type);
 void compileShaderProgramErrors(GLuint shaderProgram);

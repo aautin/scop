@@ -23,9 +23,6 @@ uniform int   uIllum; // Illumination model
 uniform vec3 uLightPosition;
 uniform vec3 uLightColor;
 
-// MVP matrices
-uniform mat4 uViewMatrix;
-
 // Camera position
 uniform vec3 uCameraPosition;
 
