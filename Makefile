@@ -10,12 +10,11 @@ GLFW_BUILD	:=	glfw/build/
 GLFW_LIB	:=	glfw/build/src/libglfw3.a
 GLFW_INC	:=	glfw/include/
 
-GLM_INC		:=	glm/
-
 SRC_FILES	:=	\
 				glfwHandling.cpp \
 				objFile.cpp \
 				glad.cpp \
+				math3d.cpp \
 				vertex.cpp \
 				matrix.cpp \
 				transformation.cpp \
@@ -33,7 +32,7 @@ RM			:=	rm -rf
 
 # ---------------------------------------- #
 $(NAME)			:	$(GLFW_LIB) $(OBJ_PATH) $(OBJ)
-					$(CC) $(OBJ) -o $@ $(GLFW_LIB) -I$(GLFW_INC) -I$(GLM_INC)
+					$(CC) $(OBJ) -o $@ $(GLFW_LIB) -I$(GLFW_INC)
 
 $(OBJ_PATH)		:
 					@mkdir -p $(OBJ_PATH)
@@ -41,7 +40,7 @@ $(OBJ_PATH)		:
 -include $(DEP)
 
 $(OBJ_PATH)/%.o	:	$(SRC_PATH)/%.cpp
-					$(CC) -MMD -MP -c $< -o $@ -I$(INC_PATH) -I$(GLFW_INC) -I$(GLM_INC)
+					$(CC) -MMD -MP -c $< -o $@ -I$(INC_PATH) -I$(GLFW_INC)
 
 $(GLFW_LIB)		:
 					cmake -S glfw -B $(GLFW_BUILD) -DGLFW_LIBRARY_TYPE=STATIC -DGLFW_BUILD_WAYLAND=OFF -DGLFW_BUILD_X11=ON

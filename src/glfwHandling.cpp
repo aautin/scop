@@ -44,12 +44,12 @@ void handlePressedKeys(GLFWwindow* window) {
         {{GLFW_KEY_A},                {moveCameraLeft, 0.1f}},
         {{GLFW_KEY_D},                {moveCameraRight, 0.1f}},
 
-        {{GLFW_KEY_X, GLFW_KEY_UP},   {rotateModelXPos, glm::radians(5.0f)}},
-        {{GLFW_KEY_X, GLFW_KEY_DOWN}, {rotateModelXNeg, glm::radians(5.0f)}},
-        {{GLFW_KEY_Y, GLFW_KEY_UP},   {rotateModelYPos, glm::radians(5.0f)}},
-        {{GLFW_KEY_Y, GLFW_KEY_DOWN}, {rotateModelYNeg, glm::radians(5.0f)}},
-        {{GLFW_KEY_Z, GLFW_KEY_UP},   {rotateModelZPos, glm::radians(5.0f)}},
-        {{GLFW_KEY_Z, GLFW_KEY_DOWN}, {rotateModelZNeg, glm::radians(5.0f)}},
+        {{GLFW_KEY_X, GLFW_KEY_UP},   {rotateModelXPos, radians(5.0f)}},
+        {{GLFW_KEY_X, GLFW_KEY_DOWN}, {rotateModelXNeg, radians(5.0f)}},
+        {{GLFW_KEY_Y, GLFW_KEY_UP},   {rotateModelYPos, radians(5.0f)}},
+        {{GLFW_KEY_Y, GLFW_KEY_DOWN}, {rotateModelYNeg, radians(5.0f)}},
+        {{GLFW_KEY_Z, GLFW_KEY_UP},   {rotateModelZPos, radians(5.0f)}},
+        {{GLFW_KEY_Z, GLFW_KEY_DOWN}, {rotateModelZNeg, radians(5.0f)}},
 
         {{GLFW_KEY_ESCAPE},           {closeApplication, 0.0f}},
     };

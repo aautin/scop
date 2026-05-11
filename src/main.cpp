@@ -281,9 +281,9 @@ int main(int argc, char** argv)
 			glUniform3f(lightPosId, user.lightPosition.x, user.lightPosition.y, user.lightPosition.z);
 			glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
 
-			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, &user.modelMatrix[0][0]);
-			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, &viewMatrix[0][0]);
-			glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, &user.projectionMatrix[0][0]);
+			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, user.modelMatrix.data());
+			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, viewMatrix.data());
+			glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, user.projectionMatrix.data());
 
 			glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
 

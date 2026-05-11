@@ -39,43 +39,43 @@ void moveCameraForward(SUser* user, float delta)
 void moveCameraLeft(SUser* user, float delta)
 {
     auto front = cameraFront(user->cameraYaw, user->cameraPitch);
-    user->cameraPosition -= delta * glm::normalize(glm::cross(front, user->cameraUp));
+    user->cameraPosition -= delta * normalize(cross(front, user->cameraUp));
 }
 
 void moveCameraRight(SUser* user, float delta)
 {
     auto front = cameraFront(user->cameraYaw, user->cameraPitch);
-    user->cameraPosition += delta * glm::normalize(glm::cross(front, user->cameraUp));
+    user->cameraPosition += delta * normalize(cross(front, user->cameraUp));
 }
 
 void rotateModelXPos(SUser* user, float delta)
 {
-    user->modelMatrix = glm::rotate(user->modelMatrix, delta, glm::vec3(1.0f, 0.0f, 0.0f));
+    user->modelMatrix = rotate(user->modelMatrix, delta, {1.0f, 0.0f, 0.0f});
 }
 
 void rotateModelXNeg(SUser* user, float delta)
 {
-    user->modelMatrix = glm::rotate(user->modelMatrix, delta, glm::vec3(-1.0f, 0.0f, 0.0f));
+    user->modelMatrix = rotate(user->modelMatrix, delta, {-1.0f, 0.0f, 0.0f});
 }
 
 void rotateModelYPos(SUser* user, float delta)
 {
-    user->modelMatrix = glm::rotate(user->modelMatrix, delta, glm::vec3(0.0f, 1.0f, 0.0f));
+    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, 1.0f, 0.0f});
 }
 
 void rotateModelYNeg(SUser* user, float delta)
 {
-    user->modelMatrix = glm::rotate(user->modelMatrix, delta, glm::vec3(0.0f, -1.0f, 0.0f));
+    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, -1.0f, 0.0f});
 }
 
 void rotateModelZPos(SUser* user, float delta)
 {
-    user->modelMatrix = glm::rotate(user->modelMatrix, delta, glm::vec3(0.0f, 0.0f, 1.0f));
+    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, 0.0f, 1.0f});
 }
 
 void rotateModelZNeg(SUser* user, float delta)
 {
-    user->modelMatrix = glm::rotate(user->modelMatrix, delta, glm::vec3(0.0f, 0.0f, -1.0f));
+    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, 0.0f, -1.0f});
 }
 
 void closeApplication(SUser* user, float)

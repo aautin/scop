@@ -5,6 +5,7 @@
 #include <string>
 
 // Project headers
+#include "math3d.h"
 #include "types.h"
 
 struct SUser
@@ -17,17 +18,17 @@ struct SUser
 	bool  useTexture = false;
 
 	// Camera
-	glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
-	glm::vec3 cameraUp       = glm::vec3(0.0f, 1.0f, 0.0f);
+	SVec3 cameraPosition = {0.0f, 0.0f, 3.0f};
+	SVec3 cameraUp       = {0.0f, 1.0f, 0.0f};
 
-	float cameraYaw = -90.0f;
-	float cameraPitch = 0.0f;
+	float cameraYaw   = -90.0f;
+	float cameraPitch =  0.0f;
 
 	// Light
-	glm::vec3 lightColor    = glm::vec3(1, 1, 1);
-	glm::vec3 lightPosition = glm::vec3(0, 0, 0);
+	SColor lightColor    = {1.0f, 1.0f, 1.0f};
+	SVec3  lightPosition = {0.0f, 0.0f, 0.0f};
 
 	// Matrices
-	glm::mat4 modelMatrix = glm::mat4(1.0f);
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+	SMat4 modelMatrix = identityMat4();
+	SMat4 projectionMatrix = perspective(radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 };

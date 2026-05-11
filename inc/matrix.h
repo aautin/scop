@@ -1,8 +1,9 @@
 #pragma once
 
 // Project headers
-#include "types.h"
-#include "user.h"
+#include "math3d.h"
 
-glm::vec3 cameraFront(float yaw, float pitch);
-glm::mat4 getViewMatrix(const SUser& user);
+struct SUser;
+
+SVec3 cameraFront(float yaw, float pitch);
+SMat4 getViewMatrix(const SUser& user);
