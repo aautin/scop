@@ -3,10 +3,11 @@
 // STL headers
 #include <chrono>
 #include <iostream>
-#include<string>
-#include<fstream>
-#include<sstream>
-#include<cerrno>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <cerrno>
+#include <vector>
 
 // GLFW headers
 #include "glad.h"
@@ -20,7 +21,7 @@
 #include "vertex.h"
 #include "matrix.h"
 
-static std::string get_file_contents(const char* filename)
+static std::string getFileContent(const char* filename)
 {
 	std::ifstream in(filename, std::ios::binary);
 	if (in)
@@ -36,28 +37,32 @@ static std::string get_file_contents(const char* filename)
 	throw(errno);
 }
 
-static void loadFile(SUser& user, const std::string& filename)
-{
-	CObjFile file(filename);
-
-	user.objects = file.getObjects();
-	user.vertices = file.getUsedVertices();
-	user.materials = file.getUsedMaterials();
-}
-
 int main(int argc, char** argv)
 {
 	//-------------------------------//
 	//- Parsing                     -//
 	//-------------------------------//
-	if (argc != 2)
+	if (argc < 2)
 	{
-		std::cerr << "Usage: " << argv[0] << " <file.obj>" << std::endl;
+		std::cerr << "Usage: " << argv[0] << " [<file.obj> ...]" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	SUser user;
-	loadFile(user, argv[1]);
+	std::vector<CObjFile> parsedFiles;
+	parsedFiles.reserve(argc - 1);
+	for (int i = 1; i < argc; ++i)
+	{
+		try
+		{
+			parsedFiles.emplace_back(argv[i]);
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error while parsing the file: " << e.what() << std::endl;
+			return EXIT_FAILURE;
+		}
+	}
 
 	//-------------------------------//
 	//- OpenGL initialization       -//
@@ -90,6 +95,11 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	for (auto& objFile : parsedFiles)
+	{
+		objFile.addToUser(user);
+	}
+
 	glViewport(0, 0, 640, 480);
 
 	glfwSetWindowUserPointer(window, &user);
@@ -100,8 +110,8 @@ int main(int argc, char** argv)
 	//-------------------------------//
 	//- Vertex and fragment shaders -//
 	//-------------------------------//
-	const std::string vertexShaderSource = get_file_contents("shaders/default.vert");
-	const std::string fragmentShaderSource = get_file_contents("shaders/default.frag");
+	const std::string vertexShaderSource = getFileContent("shaders/default.vert");
+	const std::string fragmentShaderSource = getFileContent("shaders/default.frag");
 	
 	const char* vertexShaderSourcePtr = vertexShaderSource.c_str();
 	const char* fragmentShaderSourcePtr = fragmentShaderSource.c_str();
@@ -128,18 +138,9 @@ int main(int argc, char** argv)
 	//-------------------------------//
 	//- Vertices properties         -//
 	//-------------------------------//
-	//
-	// Every triangle must have a different color than the surrounding triangles
-	// Texture is stretched to fit the whole object on x and y axis, z is ignored
-	// Center the object on the origin to make it easier to rotate around its center
-	//
-	SDimension dimension = getDimension(user.vertices);
-	assignDistinguishableColors(user.objects, user.vertices);
-	assignNormals(user.objects, user.vertices, true);
-	assignTextureCoordinates(user.vertices, dimension);
-	centerVerticesOnOrigin(user.vertices, dimension);
+	fillVertices(user);
+	placeObjectsSideBySide(user);
 	
-
 	//-------------------------------//
 	//- Bindings                    -//
 	//-------------------------------//
@@ -260,6 +261,7 @@ int main(int argc, char** argv)
 	{
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindVertexArray(VAO);
 
 		glUseProgram(shaderProgram);
 		glUniform1i(useTextureId, user.useTexture);
@@ -268,40 +270,43 @@ int main(int argc, char** argv)
 
 		auto viewMatrix = getViewMatrix(user);
 
-		for (const auto& [materialName, material] : user.materials)
+		glUniform3f(lightPosId, user.lightPosition.x, user.lightPosition.y, user.lightPosition.z);
+		glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
+		glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
+		glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, viewMatrix.data());
+		glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, user.projectionMatrix.data());
+
+		for (const auto& [fileName, file] : user.files)
 		{
-			glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
-			glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
-			glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
-			glUniform1f(NsId, material.specularExponent);
-			glUniform1f(NiId, material.opticalDensity);
-			glUniform1f(dId, material.dissolve);
-			glUniform1i(illumId, material.illuminationModel);
-
-			glUniform3f(lightPosId, user.lightPosition.x, user.lightPosition.y, user.lightPosition.z);
-			glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
-
-			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, user.modelMatrix.data());
-			glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, viewMatrix.data());
-			glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, user.projectionMatrix.data());
-
-			glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
-
-			for (const auto& [objectName, object] : user.objects)
+			for (const auto& [name, object] : file.objects)
 			{
-				if (!object.materialGroups.contains(materialName))
-				{
-					continue;
-				}
+				SMat4 modelMatrix = object.translation * object.rotation;
+				glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, modelMatrix.data());
 
-				for (const auto& triangle : object.materialGroups.at(materialName))
+				for (const auto& [materialName, material] : file.materials)
 				{
-					glDrawArrays(GL_TRIANGLES, triangle.vertexIndices[0], 3);
+					if (!object.materialGroups.contains(materialName))
+					{
+						continue;
+					}
+
+					glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
+					glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
+					glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
+					glUniform1f(NsId, material.specularExponent);
+					glUniform1f(NiId, material.opticalDensity);
+					glUniform1f(dId, material.dissolve);
+					glUniform1i(illumId, material.illuminationModel);
+
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.materialGroups.at(materialName).ebo);
+
+					glDrawElements(GL_TRIANGLES, object.materialGroups.at(materialName).triangles.size() * 3, GL_UNSIGNED_INT, 0);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 				}
 			}
 		}
 
-		glBindVertexArray(VAO);
+		glBindVertexArray(0);
 		glfwSwapBuffers(window);
 
 		glfwPollEvents();

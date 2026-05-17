@@ -35,15 +35,18 @@ void main()
     vec3 lightDir = normalize(uLightPosition - vPosition);
     vec3 viewDir = normalize(uCameraPosition - vPosition);
 
-    // Ambient, diffuse, specular lighting (as before)
+    //
+    // Ambient = Ambient color * Light color
+    //
     vec3 ambient = uKa * uLightColor;
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = uKd * diff * uLightColor;
-    vec3 halfVector = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfVector), 0.0), uNs);
-    vec3 specular = uKs * spec * uLightColor;
+    vec3 diffuse = uKd * max(dot(normal, lightDir), 0.0) * uLightColor;
+    vec3 specular = uKs * pow(max(dot(normal, normalize(lightDir + viewDir)), 0.0), uNs) * uLightColor;
 
+    //
+    // Base color and lighting calculations
+    //
     vec4 baseColor = uUseTexture == 1 ? texture(uTexture, vTexCoord) : vec4(vColor, 1.0);
     vec3 lighting = ambient + diffuse + specular;
+
     FragColor = vec4(baseColor.rgb * lighting, baseColor.a * uD);
 };

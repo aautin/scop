@@ -1,6 +1,6 @@
 #include "objFile.h"
 
-// SCL headers
+// LIBC headers
 #include <string.h>
 
 // STL headers
@@ -14,25 +14,32 @@
 #include <filesystem>
 #include <iostream>
 
+// GLFW headers
+#include "glad.h"
+#include "GLFW/glfw3.h"
+
+// Project headers
+#include "user.h"
+
 namespace fs = std::filesystem;
 
 //-------------------------------//
 //- Parsing                     -//
 //-------------------------------//
-static std::string resolveMTLPath(const std::string& objFilePath, const std::string& mtllibPath)
+static std::string resolveMTLPath(const std::string &objFilePath, const std::string &mtllibPath)
 {
-    fs::path objDir = fs::path(objFilePath).parent_path();
-    fs::path mtlPath = mtllibPath;
+	fs::path objDir = fs::path(objFilePath).parent_path();
+	fs::path mtlPath = mtllibPath;
 
-    if (!mtlPath.is_absolute())
+	if (!mtlPath.is_absolute())
 	{
-        mtlPath = objDir / mtlPath;
-    }
+		mtlPath = objDir / mtlPath;
+	}
 
-    return fs::absolute(mtlPath).lexically_normal().string();
+	return fs::absolute(mtlPath).lexically_normal().string();
 }
 
-static void removeComments(std::string& line)
+static void removeComments(std::string &line)
 {
 	size_t commentPos = line.find('#');
 	if (commentPos != std::string::npos)
@@ -41,7 +48,7 @@ static void removeComments(std::string& line)
 	}
 }
 
-static SMaterialsMap parseMtlFile(const std::string& filename, const std::string& directory)
+static SMaterialsMap parseMtlFile(const std::string &filename, const std::string &directory)
 {
 	SMaterialsMap materials;
 	std::ifstream file(filename);
@@ -69,20 +76,20 @@ static SMaterialsMap parseMtlFile(const std::string& filename, const std::string
 		else if (line.starts_with("Ka "))
 		{
 			sscanf(line.c_str(), "Ka %f %f %f", &materials[currentMaterialName].ambientColor.r,
-											    &materials[currentMaterialName].ambientColor.g,
-											    &materials[currentMaterialName].ambientColor.b);
+				   &materials[currentMaterialName].ambientColor.g,
+				   &materials[currentMaterialName].ambientColor.b);
 		}
 		else if (line.starts_with("Kd "))
 		{
 			sscanf(line.c_str(), "Kd %f %f %f", &materials[currentMaterialName].diffuseColor.r,
-											    &materials[currentMaterialName].diffuseColor.g,
-											    &materials[currentMaterialName].diffuseColor.b);
+				   &materials[currentMaterialName].diffuseColor.g,
+				   &materials[currentMaterialName].diffuseColor.b);
 		}
 		else if (line.starts_with("Ks "))
 		{
 			sscanf(line.c_str(), "Ks %f %f %f", &materials[currentMaterialName].specularColor.r,
-											    &materials[currentMaterialName].specularColor.g,
-											    &materials[currentMaterialName].specularColor.b);
+				   &materials[currentMaterialName].specularColor.g,
+				   &materials[currentMaterialName].specularColor.b);
 		}
 		else if (line.starts_with("Ns "))
 		{
@@ -104,12 +111,12 @@ static SMaterialsMap parseMtlFile(const std::string& filename, const std::string
 	return materials;
 }
 
-static std::string getObjectName(const std::string& line)
+static std::string getObjectName(const std::string &line)
 {
 	return line.substr(2);
 }
 
-static SPositionVertex getPositionVertex(const std::string& line)
+static SPositionVertex getPositionVertex(const std::string &line)
 {
 	SPositionVertex vertex;
 	sscanf(line.c_str(), "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
@@ -119,9 +126,8 @@ static SPositionVertex getPositionVertex(const std::string& line)
 //-------------------------------//
 //- Constructors / Destructors  -//
 //-------------------------------//
-CObjFile::CObjFile(const std::string& filename):
-m_pUsedMaterials{{"default", SMaterial{}}},
-m_pObjects{{"default", SObject{.name = "default"}}}
+CObjFile::CObjFile(const std::string &filename) : m_pUsedMaterials{{"default", SMaterial{}}},
+												  m_pObjects{}
 {
 	if (filename.compare(filename.length() - 4, 4, ".obj"))
 	{
@@ -132,11 +138,13 @@ m_pObjects{{"default", SObject{.name = "default"}}}
 		throw std::runtime_error(std::format("File {} does not exist", filename));
 	}
 
-	SPositionVerticesVec importedVertices;
-	SMaterialsMap 	     importedMaterials = m_pUsedMaterials;
+	m_pFileName = filename;
 
-	SMaterialName         inUseMaterialName = m_pUsedMaterials.begin()->first;
-	SObjectName	          inUseObjectName   = m_pObjects.begin()->first;
+	SPositionVerticesVec importedVertices;
+	SMaterialsMap importedMaterials = m_pUsedMaterials;
+
+	SMaterialName inUseMaterialName = m_pUsedMaterials.begin()->first;
+	SObjectName inUseObjectName;
 	std::optional<size_t> inUseSmoothingGroupIndex = std::nullopt;
 
 	auto fileContent = std::ifstream(filename);
@@ -190,6 +198,7 @@ m_pObjects{{"default", SObject{.name = "default"}}}
 		case CObjFile::ELineType::Object:
 		{
 			inUseObjectName = getObjectName(line);
+			m_pObjects.try_emplace(inUseObjectName, SObject{.name = inUseObjectName});
 			break;
 		}
 		case CObjFile::ELineType::Vertex:
@@ -199,15 +208,21 @@ m_pObjects{{"default", SObject{.name = "default"}}}
 		}
 		case CObjFile::ELineType::Face:
 		{
+			if (inUseObjectName.empty())
+			{
+				inUseObjectName = "default";
+			}
+			m_pObjects.try_emplace(inUseObjectName, SObject{.name = inUseObjectName});
+
 			auto face = getFace(line);
-			for (const auto& index : face.vertexIndices)
+			for (const auto &index : face.vertexIndices)
 			{
 				if (index == 0 || index > importedVertices.size())
 				{
 					throw std::runtime_error(std::format("Face with a non existing index : {} ({})", line, index));
 				}
 			}
-			for (auto& triangle : toTriangles(face))
+			for (auto &triangle : toTriangles(face))
 			{
 				//
 				// Push the triangle vertices to the used vertices
@@ -215,13 +230,11 @@ m_pObjects{{"default", SObject{.name = "default"}}}
 				//
 				for (size_t i = 0; i < 3; ++i)
 				{
-					m_pUsedVertices.push_back({
-						inUseSmoothingGroupIndex,
-						importedVertices[triangle.vertexIndices[i] - 1]
-					});
+					m_pUsedVertices.push_back({inUseSmoothingGroupIndex,
+											   importedVertices[triangle.vertexIndices[i] - 1]});
 					triangle.vertexIndices[i] = m_pUsedVertices.size() - 1;
 				}
-				m_pObjects[inUseObjectName].materialGroups[inUseMaterialName].push_back(triangle);
+				m_pObjects[inUseObjectName].materialGroups[inUseMaterialName].triangles.push_back(triangle);
 			}
 
 			break;
@@ -232,10 +245,65 @@ m_pObjects{{"default", SObject{.name = "default"}}}
 	}
 }
 
+void CObjFile::addToUser(SUser &user)
+{
+	//
+	// Update triangle vertex indices to match the user vertices list indices
+	//
+	for (auto &object : m_pObjects)
+	{
+		for (auto &[materialName, materialContent] : object.second.materialGroups)
+		{
+			for (auto &triangle : materialContent.triangles)
+			{
+				for (size_t i = 0; i < 3; ++i)
+				{
+					triangle.vertexIndices[i] += user.vertices.size();
+				}
+			}
+		}
+	}
+
+	//
+	// Push the used vertices to the user vertices list
+	//
+	user.vertices.insert(user.vertices.end(), m_pUsedVertices.begin(), m_pUsedVertices.end());
+
+	//
+	// Push the file objects and materials to the user files
+	//
+	for (const auto &[objectName, object] : m_pObjects)
+	{
+		user.files[m_pFileName].objects[objectName] = object;
+	}
+	for (const auto &[materialName, material] : m_pUsedMaterials)
+	{
+		user.files[m_pFileName].materials[materialName] = material;
+	}
+
+	//
+	// Define the EBO for each material group of each object
+	//
+	for (auto &[objectName, object] : user.files[m_pFileName].objects)
+	{
+		for (auto &[materialName, materialContent] : object.materialGroups)
+		{
+			if (!materialContent.triangles.empty())
+			{
+				glGenBuffers(1, &materialContent.ebo);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, materialContent.ebo);
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, materialContent.triangles.size() * sizeof(STriangle),
+					materialContent.triangles.data(), GL_STATIC_DRAW);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			}
+		}
+	}
+}
+
 //-------------------------------//
 //- Internal operations         -//
 //-------------------------------//
-CObjFile::ELineType CObjFile::getLineType(const std::string& line)
+CObjFile::ELineType CObjFile::getLineType(const std::string &line)
 {
 	if (line.starts_with("o "))
 	{
@@ -267,11 +335,11 @@ CObjFile::ELineType CObjFile::getLineType(const std::string& line)
 	}
 }
 
-CObjFile::SFace CObjFile::getFace(const std::string& line)
+CObjFile::SFace CObjFile::getFace(const std::string &line)
 {
-	SFace              face;
+	SFace face;
 	std::istringstream iss(line.substr(2));
-	std::string        vertexIndex;
+	std::string vertexIndex;
 
 	while (iss >> vertexIndex)
 	{
@@ -280,7 +348,7 @@ CObjFile::SFace CObjFile::getFace(const std::string& line)
 	return face;
 }
 
-STrianglesVec CObjFile::toTriangles(const SFace& face)
+STrianglesVec CObjFile::toTriangles(const SFace &face)
 {
 	if (face.vertexIndices.size() < 3)
 	{
@@ -289,7 +357,7 @@ STrianglesVec CObjFile::toTriangles(const SFace& face)
 
 	if (face.vertexIndices.size() == 3)
 	{
-		return {{ face.vertexIndices[0], face.vertexIndices[1], face.vertexIndices[2]}};
+		return {{face.vertexIndices[0], face.vertexIndices[1], face.vertexIndices[2]}};
 	}
 
 	STrianglesVec result;

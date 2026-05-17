@@ -9,6 +9,13 @@
 #include <map>
 #include <set>
 
+// GLFW headers
+#include "glad.h"
+#include "GLFW/glfw3.h"
+
+// Project headers
+#include "math3d.h"
+
 struct SPositionVertex
 {
 	float x, y, z;
@@ -30,6 +37,18 @@ struct STextureVertex
 struct SNormalVertex
 {
 	float x, y, z;
+};
+
+struct SDimension
+{
+	float minX, maxX;
+	float minY, maxY;
+	float minZ, maxZ;
+	float centerX, centerY, centerZ;
+
+	float width() const { return maxX - minX; }
+	float height() const { return maxY - minY; }
+	float depth() const { return maxZ - minZ; }
 };
 
 struct SColor
@@ -58,7 +77,7 @@ using SVerticesVec = std::vector<SVertex>;
 
 struct STriangle
 {
-	size_t vertexIndices[3];
+	uint32_t vertexIndices[3];
 };
 using STrianglesVec = std::vector<STriangle>;
 
@@ -76,8 +95,14 @@ struct SMaterial
 	float  dissolve          = 1;           // d
 	int    illuminationModel = 2;           // illum
 };
+struct SPerMaterialContent
+{
+	STrianglesVec triangles;
+	GLuint        ebo;
+};
+
 using SMaterialsMap = std::map<SMaterialName, SMaterial>;
-using SMaterialGroupsMap = std::map<SMaterialName, STrianglesVec>;
+using SMaterialGroupsMap = std::map<SMaterialName, SPerMaterialContent>;
 
 //--------------------------------//
 //- Object                       -//
@@ -87,5 +112,18 @@ struct SObject
 {
 	SObjectName        name;
 	SMaterialGroupsMap materialGroups;
+	SMat4              translation = identityMat4();
+	SMat4              rotation = identityMat4();
+	SDimension         dimension;
 };
 using SObjectsMap = std::map<SObjectName, SObject>;
+
+//-------------------------------//
+//- File                        -//
+//-------------------------------//
+struct SFile
+{
+	SObjectsMap   objects;
+	SMaterialsMap materials;
+};
+using SFilesMap = std::map<std::string, SFile>;

@@ -6,6 +6,9 @@
 // Project headers
 #include "types.h"
 
+// Forward declarations
+struct SUser;
+
 class CObjFile
 {
 public:
@@ -16,22 +19,9 @@ public:
 	~CObjFile() = default;
 
 	//-------------------------------//
-	//- Parameters                  -//
+	//- Operations                  -//
 	//-------------------------------//
-	/*!
-	 * @brief Used to iterate over objects and draw each of them
-	 */
-	SObjectsMap getObjects() const { return m_pObjects; }
-
-	/*!
-	 * @brief Used to fill the VBO (each vertex = position + color values)
-	 */
-	SVerticesVec getUsedVertices() const { return m_pUsedVertices; }
-
-	/*!
-	 * @brief Used to switch between materials when objects are drawn
-	 */
-	SMaterialsMap getUsedMaterials() const { return m_pUsedMaterials; }
+	void addToUser(SUser& user);
 
 private:
 	//-------------------------------//
@@ -52,7 +42,7 @@ private:
 
 	struct SFace
 	{
-		std::vector<size_t> vertexIndices;
+		std::vector<uint32_t> vertexIndices;
 	};
 	using SFaces = std::vector<SFace>;
 
@@ -66,6 +56,7 @@ private:
 	//-------------------------------//
 	//- Data                        -//
 	//-------------------------------//
+	std::string   m_pFileName;
 	SObjectsMap   m_pObjects;
 	SVerticesVec  m_pUsedVertices;
 	SMaterialsMap m_pUsedMaterials = {{"default", SMaterial{}}};

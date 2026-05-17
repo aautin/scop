@@ -34,22 +34,22 @@ void handlePressedKeys(GLFWwindow* window) {
 	
 	using ActionFunction = std::function<void(SUser*, float)>;
     static const std::map<Keys, std::pair<ActionFunction, float>> keyBindings = {
-        {{GLFW_KEY_DOWN},             {moveLightBackward, 0.1f}},
-        {{GLFW_KEY_UP},               {moveLightForward, 0.1f}},
-        {{GLFW_KEY_LEFT},             {moveLightLeft, 0.1f}},
-        {{GLFW_KEY_RIGHT},            {moveLightRight, 0.1f}},
+        {{GLFW_KEY_L, GLFW_KEY_DOWN},  {moveLightBackward, 0.1f}},
+        {{GLFW_KEY_L, GLFW_KEY_UP},    {moveLightForward, 0.1f}},
+        {{GLFW_KEY_L, GLFW_KEY_LEFT},  {moveLightLeft, 0.1f}},
+        {{GLFW_KEY_L, GLFW_KEY_RIGHT}, {moveLightRight, 0.1f}},
 
-        {{GLFW_KEY_S},                {moveCameraBackward, 0.1f}},
-        {{GLFW_KEY_W},                {moveCameraForward, 0.1f}},
-        {{GLFW_KEY_A},                {moveCameraLeft, 0.1f}},
-        {{GLFW_KEY_D},                {moveCameraRight, 0.1f}},
+        {{GLFW_KEY_S},                 {moveCameraBackward, 0.1f}},
+        {{GLFW_KEY_W},                 {moveCameraForward, 0.1f}},
+        {{GLFW_KEY_A},                 {moveCameraLeft, 0.1f}},
+        {{GLFW_KEY_D},                 {moveCameraRight, 0.1f}},
 
-        {{GLFW_KEY_X, GLFW_KEY_UP},   {rotateModelXPos, radians(5.0f)}},
-        {{GLFW_KEY_X, GLFW_KEY_DOWN}, {rotateModelXNeg, radians(5.0f)}},
-        {{GLFW_KEY_Y, GLFW_KEY_UP},   {rotateModelYPos, radians(5.0f)}},
-        {{GLFW_KEY_Y, GLFW_KEY_DOWN}, {rotateModelYNeg, radians(5.0f)}},
-        {{GLFW_KEY_Z, GLFW_KEY_UP},   {rotateModelZPos, radians(5.0f)}},
-        {{GLFW_KEY_Z, GLFW_KEY_DOWN}, {rotateModelZNeg, radians(5.0f)}},
+        {{GLFW_KEY_X, GLFW_KEY_UP},    {rotateModelXPos, radians(5.0f)}},
+        {{GLFW_KEY_X, GLFW_KEY_DOWN},  {rotateModelXNeg, radians(5.0f)}},
+        {{GLFW_KEY_Y, GLFW_KEY_UP},    {rotateModelYPos, radians(5.0f)}},
+        {{GLFW_KEY_Y, GLFW_KEY_DOWN},  {rotateModelYNeg, radians(5.0f)}},
+        {{GLFW_KEY_Z, GLFW_KEY_UP},    {rotateModelZPos, radians(5.0f)}},
+        {{GLFW_KEY_Z, GLFW_KEY_DOWN},  {rotateModelZNeg, radians(5.0f)}},
 
         {{GLFW_KEY_ESCAPE},           {closeApplication, 0.0f}},
     };
@@ -63,6 +63,47 @@ void handlePressedKeys(GLFWwindow* window) {
         if (std::all_of(keys.begin(), keys.end(), [&](int key)
             { return glfwGetKey(window, key) == GLFW_PRESS; }))
 		{
+            for (int key = GLFW_KEY_1; key <= GLFW_KEY_9; ++key)
+            {
+                //
+                // Select the object to rotate with the number keys
+                //
+                if (glfwGetKey(window, key) == GLFW_PRESS)
+                {
+                        user->selectedRotationMatrix = nullptr;
+                        bool found = false;
+
+                        //
+                        // Browse in all the object and select the one corresponding to the pressed number key
+                        //
+                        size_t objectIndex = key - GLFW_KEY_1;
+                        size_t currentIndex = 0;
+                        for (auto& [fileName, file] : user->files)
+                        {
+                            for (auto& [objectName, object] : file.objects)
+                            {
+                                if (object.materialGroups.empty())
+                                {
+                                    continue;
+                                }
+
+                                if (currentIndex == objectIndex)
+                                {
+                                    user->selectedRotationMatrix = &object.rotation;
+                                    found = true;
+                                    break;
+                                }
+                                ++currentIndex;
+                            }
+
+                            if (found)
+                            {
+                                break;
+                            }
+                        }
+                        break;
+                }
+            }
             function(user, arg);
         }
     }

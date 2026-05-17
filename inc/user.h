@@ -7,15 +7,15 @@
 // Project headers
 #include "math3d.h"
 #include "types.h"
+#include "objFile.h"
 
 struct SUser
 {
-	// Objects, vertices and materials
-	SObjectsMap   objects;
-	SVerticesVec  vertices;
-	SMaterialsMap materials;
+	SFilesMap    files;
+	SVerticesVec vertices;
 
 	bool  useTexture = false;
+	SMat4* selectedRotationMatrix = nullptr;
 
 	// Camera
 	SVec3 cameraPosition = {0.0f, 0.0f, 3.0f};
@@ -29,6 +29,5 @@ struct SUser
 	SVec3  lightPosition = {0.0f, 0.0f, 0.0f};
 
 	// Matrices
-	SMat4 modelMatrix = identityMat4();
 	SMat4 projectionMatrix = perspective(radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 };

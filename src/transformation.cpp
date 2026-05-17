@@ -50,32 +50,62 @@ void moveCameraRight(SUser* user, float delta)
 
 void rotateModelXPos(SUser* user, float delta)
 {
-    user->modelMatrix = rotate(user->modelMatrix, delta, {1.0f, 0.0f, 0.0f});
+    if (user->selectedRotationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedRotationMatrix = rotate(*user->selectedRotationMatrix, delta, {1.0f, 0.0f, 0.0f});
 }
 
 void rotateModelXNeg(SUser* user, float delta)
 {
-    user->modelMatrix = rotate(user->modelMatrix, delta, {-1.0f, 0.0f, 0.0f});
+    if (user->selectedRotationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedRotationMatrix = rotate(*user->selectedRotationMatrix, delta, {-1.0f, 0.0f, 0.0f});
 }
 
 void rotateModelYPos(SUser* user, float delta)
 {
-    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, 1.0f, 0.0f});
+    if (user->selectedRotationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedRotationMatrix = rotate(*user->selectedRotationMatrix, delta, {0.0f, 1.0f, 0.0f});
 }
 
 void rotateModelYNeg(SUser* user, float delta)
 {
-    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, -1.0f, 0.0f});
+    if (user->selectedRotationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedRotationMatrix = rotate(*user->selectedRotationMatrix, delta, {0.0f, -1.0f, 0.0f});
 }
 
 void rotateModelZPos(SUser* user, float delta)
 {
-    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, 0.0f, 1.0f});
+    if (user->selectedRotationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedRotationMatrix = rotate(*user->selectedRotationMatrix, delta, {0.0f, 0.0f, 1.0f});
 }
 
 void rotateModelZNeg(SUser* user, float delta)
 {
-    user->modelMatrix = rotate(user->modelMatrix, delta, {0.0f, 0.0f, -1.0f});
+    if (user->selectedRotationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedRotationMatrix = rotate(*user->selectedRotationMatrix, delta, {0.0f, 0.0f, -1.0f});
 }
 
 void closeApplication(SUser* user, float)

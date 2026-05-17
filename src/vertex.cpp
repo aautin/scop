@@ -1,14 +1,16 @@
 #include "vertex.h"
 
-// Project headers
-#include "math3d.h"
-
 // STL headers
 #include <random>
 #include <filesystem>
 #include <ranges>
 #include <algorithm>
 #include <iostream>
+
+// Project headers
+#include "math3d.h"
+#include "types.h"
+#include "user.h"
 
 namespace rg = std::ranges;
 
@@ -22,82 +24,92 @@ static T random(T min, T max)
 	return dis(gen);
 }
 
-SDimension getDimension(const SVerticesVec& vertices)
+static SDimension setDimension(SObject& object, const SVerticesVec& vertices)
 {
-	SDimension dimension;
-	dimension.minX = rg::min_element(vertices, {}, [](const SVertex& v){return v.position.x;})->position.x;
-	dimension.maxX = rg::max_element(vertices, {}, [](const SVertex& v){return v.position.x;})->position.x;
-	dimension.minY = rg::min_element(vertices, {}, [](const SVertex& v){return v.position.y;})->position.y;
-	dimension.maxY = rg::max_element(vertices, {}, [](const SVertex& v){return v.position.y;})->position.y;
-	dimension.minZ = rg::min_element(vertices, {}, [](const SVertex& v){return v.position.z;})->position.z;
-	dimension.maxZ = rg::max_element(vertices, {}, [](const SVertex& v){return v.position.z;})->position.z;
+	object.dimension.minX = object.dimension.minY = object.dimension.minZ = std::numeric_limits<float>::max();
+	object.dimension.maxX = object.dimension.maxY = object.dimension.maxZ = std::numeric_limits<float>::lowest();
+	for (const auto& materialGroup : object.materialGroups)
+	{
+		for (const auto& triangle : materialGroup.second.triangles)
+		{
+			for (size_t i = 0; i < 3; ++i)
+			{
+				const auto& vertex = vertices[triangle.vertexIndices[i]];
+				object.dimension.minX = std::min(object.dimension.minX, vertex.position.x);
+				object.dimension.maxX = std::max(object.dimension.maxX, vertex.position.x);
+				object.dimension.minY = std::min(object.dimension.minY, vertex.position.y);
+				object.dimension.maxY = std::max(object.dimension.maxY, vertex.position.y);
+				object.dimension.minZ = std::min(object.dimension.minZ, vertex.position.z);
+				object.dimension.maxZ = std::max(object.dimension.maxZ, vertex.position.z);
+			}
+		}
+	}
 
-	dimension.centerX = (dimension.minX + dimension.maxX) / 2.0f;
-	dimension.centerY = (dimension.minY + dimension.maxY) / 2.0f;
-	dimension.centerZ = (dimension.minZ + dimension.maxZ) / 2.0f;
+	object.dimension.centerX = (object.dimension.minX + object.dimension.maxX) / 2.0f;
+	object.dimension.centerY = (object.dimension.minY + object.dimension.maxY) / 2.0f;
+	object.dimension.centerZ = (object.dimension.minZ + object.dimension.maxZ) / 2.0f;
 
-	return dimension;
+	return object.dimension;
 }
 
-void assignDistinguishableColors(const SObjectsMap& objects, SVerticesVec& vertices)
+void assignDistinguishableColors(const SObject& object, SVerticesVec& vertices)
 {
 	std::map<SPositionVertex, float> usedColors;
-	for (const auto& object : objects)
+	for (const auto& materialGroup : object.materialGroups)
 	{
-		for (const auto& [materialName, triangles] : object.second.materialGroups)
+		for (const auto& triangle : materialGroup.second.triangles)
 		{
-			for (const auto& triangle : triangles)
+			SPositionVerticesVec trianglesVertices;
+			for (size_t i = 0; i < 3; ++i)
 			{
-				SPositionVerticesVec trianglesVertices;
-				for (size_t i = 0; i < 3; ++i)
+				trianglesVertices.push_back(vertices[triangle.vertexIndices[i]].position);
+				if (usedColors.contains(trianglesVertices.back()))
 				{
-					trianglesVertices.push_back(vertices[triangle.vertexIndices[i]].position);
+					continue;
 				}
-				float color;
-				do
-				{
-					color = random<float>(0.0f, 1.0f);
-				}
-				while (rg::any_of(trianglesVertices, [&](auto vertex) { return usedColors[vertex] == color; }));
+			}
 
-				for (size_t i = 0; i < 3; ++i)
-				{
-					vertices[triangle.vertexIndices[i]].color = { color, color, color };
-					usedColors[trianglesVertices[i]] = color;
-				}
+			float color;
+			do
+			{
+				color = random<float>(0.0f, 1.0f);
+			}
+			while (rg::any_of(trianglesVertices, [&](auto vertex) { return usedColors[vertex] == color; }));
+
+			for (size_t i = 0; i < 3; ++i)
+			{
+				vertices[triangle.vertexIndices[i]].color = { color, color, color };
+				usedColors[trianglesVertices[i]] = color;
 			}
 		}
 	}
 }
 
-
-void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices, const bool smooth)
+void assignNormals(const SObject& object, SVerticesVec& vertices, const bool smooth)
 {
 	//
 	// For each triangle, we calculate clockwise and assign the normal vector to its 3 vertices
 	// No smoothing is applied, to be continued...
 	//
-	for (const auto& object : objects)
-	{
-		for (const auto& [materialName, triangles] : object.second.materialGroups)
-		{
-			for (const auto& triangle : triangles)
-			{
-				SVec3 v0 = { vertices[triangle.vertexIndices[0]].position.x,
-							 vertices[triangle.vertexIndices[0]].position.y,
-							 vertices[triangle.vertexIndices[0]].position.z };
-				SVec3 v1 = { vertices[triangle.vertexIndices[1]].position.x,
-							 vertices[triangle.vertexIndices[1]].position.y,
-							 vertices[triangle.vertexIndices[1]].position.z };
-				SVec3 v2 = { vertices[triangle.vertexIndices[2]].position.x,
-							 vertices[triangle.vertexIndices[2]].position.y,
-							 vertices[triangle.vertexIndices[2]].position.z };
 
-				SVec3 normal = normalize(cross(v1 - v0, v2 - v0));
-				for (size_t i = 0; i < 3; ++i)
-				{
-					vertices[triangle.vertexIndices[i]].normal = { normal.x, normal.y, normal.z };
-				}
+	for (const auto& [materialName, materialContent] : object.materialGroups)
+	{
+		for (const auto& triangle : materialContent.triangles)
+		{
+			SVec3 v0 = { vertices[triangle.vertexIndices[0]].position.x,
+							vertices[triangle.vertexIndices[0]].position.y,
+							vertices[triangle.vertexIndices[0]].position.z };
+			SVec3 v1 = { vertices[triangle.vertexIndices[1]].position.x,
+							vertices[triangle.vertexIndices[1]].position.y,
+							vertices[triangle.vertexIndices[1]].position.z };
+			SVec3 v2 = { vertices[triangle.vertexIndices[2]].position.x,
+							vertices[triangle.vertexIndices[2]].position.y,
+							vertices[triangle.vertexIndices[2]].position.z };
+
+			SVec3 normal = normalize(cross(v1 - v0, v2 - v0));
+			for (size_t i = 0; i < 3; ++i)
+			{
+				vertices[triangle.vertexIndices[i]].normal = { normal.x, normal.y, normal.z };
 			}
 		}
 	}
@@ -146,42 +158,83 @@ void assignNormals(const SObjectsMap& objects, SVerticesVec& vertices, const boo
 	}
 }
 
-void centerVerticesOnOrigin(SVerticesVec& vertices, const SDimension& dimension)
+void centerVerticesOnOrigin(const SObject& object, SVerticesVec& vertices)
 {
-	for (SVertex& vertex : vertices)
+	for (auto& materialGroup : object.materialGroups)
 	{
-		vertex.position.x -= dimension.centerX;
-		vertex.position.y -= dimension.centerY;
-		vertex.position.z -= dimension.centerZ;
+		for (auto& triangle : materialGroup.second.triangles)
+		{
+			for (size_t i = 0; i < 3; ++i)
+			{
+				vertices[triangle.vertexIndices[i]].position.x -= object.dimension.centerX;
+				vertices[triangle.vertexIndices[i]].position.y -= object.dimension.centerY;
+				vertices[triangle.vertexIndices[i]].position.z -= object.dimension.centerZ;
+			}
+		}
 	}
 }
 
-void assignTextureCoordinates(SVerticesVec& vertices, const SDimension& dimension)
+void assignTextureCoordinates(const SObject& object, SVerticesVec& vertices)
 {
-	for (SVertex& vertex : vertices)
+	for (const auto& [materialName, materialContent] : object.materialGroups)
 	{
-		if (vertex.normal.x == 0 && vertex.normal.y == 0 && vertex.normal.z == 0)
+		for (const auto& triangle : materialContent.triangles)
 		{
-			throw std::runtime_error("Trying to assign texture coordinates to a vertex with no normal");
-		}
+			for (size_t i = 0; i < 3; ++i)
+			{
+				SVertex& vertex = vertices[triangle.vertexIndices[i]];
+				if (vertex.normal.x == 0 && vertex.normal.y == 0 && vertex.normal.z == 0)
+				{
+					throw std::runtime_error("Trying to assign texture coordinates to a vertex with no normal");
+				}
 
-		if (std::abs(vertex.normal.x) > std::abs(vertex.normal.y) && std::abs(vertex.normal.x) > std::abs(vertex.normal.z))
-		{
-			// Projection on yz plane
-			vertex.texture.u = (vertex.position.z - dimension.minZ) / dimension.depth();
-			vertex.texture.v = (vertex.position.y - dimension.minY) / dimension.height();
+				if (std::abs(vertex.normal.x) > std::abs(vertex.normal.y) && std::abs(vertex.normal.x) > std::abs(vertex.normal.z))
+				{
+					// Projection on yz plane
+					vertex.texture.u = (vertex.position.z - object.dimension.minZ) / object.dimension.depth();
+					vertex.texture.v = (vertex.position.y - object.dimension.minY) / object.dimension.height();
+				}
+				else if (std::abs(vertex.normal.y) > std::abs(vertex.normal.x) && std::abs(vertex.normal.y) > std::abs(vertex.normal.z))
+				{
+					// Projection on xz plane
+					vertex.texture.u = (vertex.position.x - object.dimension.minX) / object.dimension.width();
+					vertex.texture.v = (vertex.position.z - object.dimension.minZ) / object.dimension.depth();
+				}
+				else
+				{
+					// Projection on xy plane
+					vertex.texture.u = (vertex.position.x - object.dimension.minX) / object.dimension.width();
+					vertex.texture.v = (vertex.position.y - object.dimension.minY) / object.dimension.height();
+				}
+			}
 		}
-		else if (std::abs(vertex.normal.y) > std::abs(vertex.normal.x) && std::abs(vertex.normal.y) > std::abs(vertex.normal.z))
+	}
+}
+
+void fillVertices(SUser& user)
+{
+	for (auto& [fileName, file] : user.files)
+	{
+		for (auto& [objectName, object] : file.objects)
 		{
-			// Projection on xz plane
-			vertex.texture.u = (vertex.position.x - dimension.minX) / dimension.width();
-			vertex.texture.v = (vertex.position.z - dimension.minZ) / dimension.depth();
+			setDimension(object, user.vertices);
+			assignDistinguishableColors(object, user.vertices);
+			assignNormals(object, user.vertices, true);
+			centerVerticesOnOrigin(object, user.vertices);
+			assignTextureCoordinates(object, user.vertices);
 		}
-		else
+	}
+}
+
+void placeObjectsSideBySide(SUser& user)
+{
+	float offset = 0.0f;
+	for (auto& [fileName, file] : user.files)
+	{
+		for (auto& [objectName, object] : file.objects)
 		{
-			// Projection on xy plane
-			vertex.texture.u = (vertex.position.x - dimension.minX) / dimension.width();
-			vertex.texture.v = (vertex.position.y - dimension.minY) / dimension.height();
+			object.translation = translate(object.translation, { offset + object.dimension.width() / 2, 0.0f, 0.0f });
+			offset += object.dimension.width() + 1.0f;
 		}
 	}
 }
