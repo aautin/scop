@@ -1,0 +1,11 @@
+# Blender MTL File: 'glass.mtl'
+# Material Count: 1
+
+newmtl Glass
+Ns 100.000000
+Ka 0.050000 0.050000 0.100000
+Kd 0.100000 0.100000 0.200000
+Ks 0.800000 0.800000 0.900000
+Ni 1.500000
+d 0.1
+illum 2

@@ -89,8 +89,8 @@ struct SMaterial
 {
 	SColor ambientColor  = {0.2, 0.2, 0.2}; // Ka
 	SColor diffuseColor  = {0.8, 0.8, 0.8}; // Kd
-	SColor specularColor = {0, 0, 0};       // Ks
-	float  specularExponent  = 1;           // Ns
+	SColor specularColor = {1, 1, 1};       // Ks
+	float  specularExponent  = 20;          // Ns
 	float  opticalDensity    = 1;           // Ni
 	float  dissolve          = 1;           // d
 	int    illuminationModel = 2;           // illum

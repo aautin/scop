@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <ranges>
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 // Project headers
@@ -85,7 +86,7 @@ void assignDistinguishableColors(const SObject& object, SVerticesVec& vertices)
 	}
 }
 
-void assignNormals(const SObject& object, SVerticesVec& vertices, const bool smooth)
+void assignNormals(const SObject& object, SVerticesVec& vertices)
 {
 	//
 	// For each triangle, we calculate clockwise and assign the normal vector to its 3 vertices
@@ -106,54 +107,66 @@ void assignNormals(const SObject& object, SVerticesVec& vertices, const bool smo
 							vertices[triangle.vertexIndices[2]].position.y,
 							vertices[triangle.vertexIndices[2]].position.z };
 
-			SVec3 normal = normalize(cross(v1 - v0, v2 - v0));
+			SVec3 nCross = cross(v1 - v0, v2 - v0);
+			float nLen = std::sqrt(nCross.x * nCross.x + nCross.y * nCross.y + nCross.z * nCross.z);
+			if (nLen < 1e-8f)
+			{
+				// Degenerate/collinear triangle, skip normal assignment for this face
+				continue;
+			}
+
+			SVec3 normal = normalize(nCross);
 			for (size_t i = 0; i < 3; ++i)
 			{
 				vertices[triangle.vertexIndices[i]].normal = { normal.x, normal.y, normal.z };
 			}
 		}
 	}
+}
 
-	if (smooth)
+void smoothNormals(const SObject& object, SVerticesVec& vertices)
+{
+	// Group vertices by quantized position + smoothing group to avoid O(V^2)
+	const float QUANT = 1e6f;
+	std::map<std::tuple<long long, long long, long long, int>, std::vector<size_t>> groups;
+
+	for (size_t i = 0; i < vertices.size(); ++i)
 	{
-		//
-		// For each vertex position, the normal is the average of all vertices normals
-		// with the same position and the same smoothing group index
-		//
-		for (SVertex& vertex : vertices)
+		SVertex& vertex = vertices[i];
+		if (!vertex.smoothingGroupIndex.has_value())
+			continue;
+
+		long long qx = std::llround(vertex.position.x * QUANT);
+		long long qy = std::llround(vertex.position.y * QUANT);
+		long long qz = std::llround(vertex.position.z * QUANT);
+		int sg = vertex.smoothingGroupIndex.value();
+
+		groups[std::make_tuple(qx, qy, qz, sg)].push_back(i);
+	}
+
+	for (auto& [key, idxs] : groups)
+	{
+		SVec3 normalSum = { 0.0f, 0.0f, 0.0f };
+		for (size_t idx : idxs)
 		{
-			if (!vertex.smoothingGroupIndex.has_value() || vertex.isSmoothed)
-			{
-				continue;
-			}
+			normalSum += SVec3{ vertices[idx].normal.x, vertices[idx].normal.y, vertices[idx].normal.z };
+		}
 
-			SVec3 normalSum;
-			size_t count = 0;
+		if (idxs.empty())
+			continue;
 
-			for (SVertex& v : vertices)
-			{
-				if (v.position == vertex.position
-					&& v.smoothingGroupIndex.has_value()
-					&& v.smoothingGroupIndex == vertex.smoothingGroupIndex)
-				{
-					normalSum += SVec3{v.normal.x, v.normal.y, v.normal.z};
-					++count;
-				}
-			}
+		normalSum /= static_cast<float>(idxs.size());
 
-			if (count > 0)
-			{
-				normalSum /= static_cast<float>(count);
+		float len = std::sqrt(normalSum.x * normalSum.x + normalSum.y * normalSum.y + normalSum.z * normalSum.z);
+		if (len < 1e-8f)
+			continue;
 
-				for (SVertex& v : vertices)
-				{
-					if (v.position == vertex.position && v.smoothingGroupIndex == vertex.smoothingGroupIndex)
-					{
-						v.normal = { normalSum.x, normalSum.y, normalSum.z };
-						v.isSmoothed = true;
-					}
-				}
-			}
+		normalSum = normalize(normalSum);
+
+		for (size_t idx : idxs)
+		{
+			vertices[idx].normal = { normalSum.x, normalSum.y, normalSum.z };
+			vertices[idx].isSmoothed = true;
 		}
 	}
 }
@@ -219,9 +232,10 @@ void fillVertices(SUser& user)
 		{
 			setDimension(object, user.vertices);
 			assignDistinguishableColors(object, user.vertices);
-			assignNormals(object, user.vertices, true);
+			assignNormals(object, user.vertices);
 			centerVerticesOnOrigin(object, user.vertices);
 			assignTextureCoordinates(object, user.vertices);
+			smoothNormals(object, user.vertices);
 		}
 	}
 }

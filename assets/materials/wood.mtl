@@ -1,0 +1,11 @@
+# Blender MTL File: 'wood.mtl'
+# Material Count: 1
+
+newmtl Wood
+Ns 10.000000
+Ka 0.200000 0.100000 0.050000
+Kd 0.600000 0.400000 0.200000
+Ks 0.100000 0.050000 0.020000
+Ni 1.000000
+d 1.000000
+illum 2
