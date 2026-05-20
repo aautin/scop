@@ -1,15 +1,15 @@
 # scop
 
-Scop is a project of 42 school. It is a 3D graphic project using OpenGL and C++. The goal of the project is to create a 3D model viewer that can load and display 3D objects from .obj files (and .mtl).
+## Model-view-projection
+[!model_view_projection](doc/model_view_projection.png)
 
-The viewer should also be able to:
-- apply textures to the objects
-- allow the user to manipulate objects by rotating them on their 3 axis
-- zoom in and out
+## OpenGL rendering pipeline
+[!opengl_pipeline](doc/opengl_pipeline.png)
+[!opengl_pipeline_2](doc/opengl_pipeline_2.png)
 
-## Features
-- Parsing of .obj vertices and faces
-- No optimization with index buffers, each face is drawn as a separate triangle
-- Escape key to exit the program
-- Each vertex has is own color, so each triangle is a shading of the its vertices colors
-- Vertex shader and fragment shader to handle the rendering of the models
+## Types of light
+[!types_of_light](doc/types_of_light.png)
+[!specular_reflection](doc/specular_reflection.png)
+
+## OpenGL buffers
+[!vao_vbo](doc/vao_vbo.png)
