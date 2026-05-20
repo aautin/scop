@@ -238,6 +238,7 @@ int main(int argc, char** argv)
 	// We uniforms to have shared variables between CPU and GPU, they're global to the
 	// shader program scope, updating a uniform can only be done between drawing calls
 	//
+	GLuint transition   = glGetUniformLocation(shaderProgram, "uTransition");
 	GLuint useTextureId = glGetUniformLocation(shaderProgram, "uUseTexture");
 
 	GLuint KaId    = glGetUniformLocation(shaderProgram, "uKa");
@@ -257,10 +258,24 @@ int main(int argc, char** argv)
 
 	GLuint cameraPositionId = glGetUniformLocation(shaderProgram, "uCameraPosition");
 
+	//
+	// Enable depth testing to make sure that fragments that are behind others are not drawn
+	//
 	glEnable(GL_DEPTH_TEST);
+
+	//
+	// Enable blending to properly render transparent objs, set blending function transparency factor on alpha channel
+	//
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+
+	//
+	// Enable back face culling to not render faces that are not visible to the camera, optimization for closed objects
+	//
+	glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+
 	//-------------------------------//
 	//- Main loop (events and draw) -//
 	//-------------------------------//
@@ -271,7 +286,6 @@ int main(int argc, char** argv)
 		glBindVertexArray(VAO);
 
 		glUseProgram(shaderProgram);
-		glUniform1i(useTextureId, user.useTexture);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -282,6 +296,25 @@ int main(int argc, char** argv)
 		glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
 		glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, viewMatrix.data());
 		glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, user.projectionMatrix.data());
+
+
+		if (user.timerRunning && user.timerElapsed() > 1.0)
+		{
+			user.timerStop();
+			user.useTexture = !user.useTexture;
+		}
+		
+		if (user.timerRunning)
+		{
+			glUniform1f(transition, user.timerElapsed());
+		}
+		else
+		{
+			glUniform1f(transition, 0.0f);
+		}
+		
+		glUniform1i(useTextureId, user.useTexture);
+		
 
 		// Separate objects into opaque and transparent, keeping track of their file
 		struct ObjectWithFile {
@@ -343,6 +376,7 @@ int main(int argc, char** argv)
 
 		// Render transparent objects (depth writes disabled, sorted back-to-front)
 		glDepthMask(GL_FALSE);
+		glDisable(GL_CULL_FACE);
 
 		for (const auto& objWithFile : transparentObjects)
 		{

@@ -112,3 +112,79 @@ void closeApplication(SUser* user, float)
 {
     glfwSetWindowShouldClose(glfwGetCurrentContext(), true);
 }
+
+void translateModelXPos(SUser* user, float delta)
+{
+    if (user->selectedTranslationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedTranslationMatrix = translate(*user->selectedTranslationMatrix, { delta, 0.0f, 0.0f });
+}
+
+void translateModelXNeg(SUser* user, float delta)
+{
+    if (user->selectedTranslationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedTranslationMatrix = translate(*user->selectedTranslationMatrix, { -delta, 0.0f, 0.0f });
+}
+
+void translateModelYPos(SUser* user, float delta)
+{
+    if (user->selectedTranslationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedTranslationMatrix = translate(*user->selectedTranslationMatrix, { 0.0f, delta, 0.0f });
+}
+
+void translateModelYNeg(SUser* user, float delta)
+{
+    if (user->selectedTranslationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedTranslationMatrix = translate(*user->selectedTranslationMatrix, { 0.0f, -delta, 0.0f });
+}
+
+void translateModelZPos(SUser* user, float delta)
+{
+    if (user->selectedTranslationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedTranslationMatrix = translate(*user->selectedTranslationMatrix, { 0.0f, 0.0f, delta });
+}  
+
+void translateModelZNeg(SUser* user, float delta)
+{
+    if (user->selectedTranslationMatrix == nullptr)
+    {
+        return;
+    }
+
+    *user->selectedTranslationMatrix = translate(*user->selectedTranslationMatrix, { 0.0f, 0.0f, -delta });
+}
+
+
+void lightColorR(SUser* user, float delta)
+{
+    user->lightColor.r = std::clamp(user->lightColor.r + delta, 0.0f, 1.0f);
+}
+
+void lightColorG(SUser* user, float delta)
+{
+    user->lightColor.g = std::clamp(user->lightColor.g + delta, 0.0f, 1.0f);
+}
+
+void lightColorB(SUser* user, float delta)
+{
+    user->lightColor.b = std::clamp(user->lightColor.b + delta, 0.0f, 1.0f);
+}

@@ -25,3 +25,16 @@ void rotateModelZNeg(SUser* user, float delta);
 
 // Application control
 void closeApplication(SUser* user, float);
+
+// Translations
+void translateModelXPos(SUser* user, float delta);
+void translateModelXNeg(SUser* user, float delta);
+void translateModelYPos(SUser* user, float delta);
+void translateModelYNeg(SUser* user, float delta);
+void translateModelZPos(SUser* user, float delta);
+void translateModelZNeg(SUser* user, float delta);
+
+// Light color adjustments
+void lightColorR(SUser* user, float delta);
+void lightColorG(SUser* user, float delta);
+void lightColorB(SUser* user, float delta);

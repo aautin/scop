@@ -10,6 +10,9 @@ in vec3 vNormal;
 uniform sampler2D uTexture;
 uniform int uUseTexture;
 
+// Transition properties (for bonus)
+uniform float uTransition;
+
 // Material properties
 uniform vec3  uKa;    // Ambient color
 uniform vec3  uKd;    // Diffuse color
@@ -26,6 +29,7 @@ uniform vec3 uLightColor;
 // Camera position
 uniform vec3 uCameraPosition;
 
+
 // Final pixel
 out vec4 FragColor;
 
@@ -38,6 +42,15 @@ void main() {
     // Base color (from texture or vertex color)
     //
     vec4 baseColor = uUseTexture == 1 ? texture(uTexture, vTexCoord) : vec4(vColor, 1.0);
+
+    //
+    // Mix it with the other mode if transition is active (for bonus)
+    //
+    if (uTransition > 0.0 && uTransition < 1.0)
+    {
+        vec4 otherColor = uUseTexture == 1 ? vec4(vColor, 1.0) : texture(uTexture, vTexCoord);
+        baseColor = mix(baseColor, otherColor, uTransition);
+    }
 
     //
     // Apply dissolve (opacity)
@@ -61,7 +74,8 @@ void main() {
 
     //
     // Calculate final lighting based on the illumination model
-    //    
+    //
+    vec3 lighting;
     switch (uIllum)
     {
         case 0:

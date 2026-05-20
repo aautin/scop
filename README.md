@@ -13,3 +13,11 @@
 
 ## OpenGL buffers
 ![vao_vbo](doc/vao_vbo.png)
+
+## Bonus
+
+* Smooth groups
+* Transparency
+* Multi-objects rendering
+* Camera movements and rotations
+* Light color real-time modification

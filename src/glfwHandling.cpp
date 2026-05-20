@@ -13,7 +13,7 @@ void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, in
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
 
 	const std::map<int, std::function<void()>> keyBindings = {
-		{GLFW_KEY_M, [user](){ user->useTexture = !user->useTexture; }},
+		{GLFW_KEY_M, [user](){ if (!user->timerRunning) user->timerStartNow(); }},
 	};
 
 	if (action == GLFW_RELEASE)
@@ -51,6 +51,20 @@ void handlePressedKeys(GLFWwindow* window) {
         {{GLFW_KEY_Z, GLFW_KEY_UP},    {rotateModelZPos, radians(5.0f)}},
         {{GLFW_KEY_Z, GLFW_KEY_DOWN},  {rotateModelZNeg, radians(5.0f)}},
 
+        {{GLFW_KEY_X, GLFW_KEY_LEFT},   {translateModelXPos, 0.1f}},
+        {{GLFW_KEY_X, GLFW_KEY_RIGHT},  {translateModelXNeg, 0.1f}},
+        {{GLFW_KEY_Y, GLFW_KEY_LEFT},   {translateModelYPos, 0.1f}},
+        {{GLFW_KEY_Y, GLFW_KEY_RIGHT},  {translateModelYNeg, 0.1f}},
+        {{GLFW_KEY_Z, GLFW_KEY_LEFT},   {translateModelZPos, 0.1f}},
+        {{GLFW_KEY_Z, GLFW_KEY_RIGHT},  {translateModelZNeg, 0.1f}},
+
+        {{GLFW_KEY_EQUAL, GLFW_KEY_R},  {lightColorR,  0.1f}},
+        {{GLFW_KEY_MINUS, GLFW_KEY_R},  {lightColorR, -0.1f}},
+        {{GLFW_KEY_EQUAL, GLFW_KEY_G},  {lightColorG,  0.1f}},
+        {{GLFW_KEY_MINUS, GLFW_KEY_G},  {lightColorG, -0.1f}},
+        {{GLFW_KEY_EQUAL, GLFW_KEY_B},  {lightColorB,  0.1f}},
+        {{GLFW_KEY_MINUS, GLFW_KEY_B},  {lightColorB, -0.1f}},
+
         {{GLFW_KEY_ESCAPE},           {closeApplication, 0.0f}},
     };
 
@@ -71,6 +85,7 @@ void handlePressedKeys(GLFWwindow* window) {
                 if (glfwGetKey(window, key) == GLFW_PRESS)
                 {
                         user->selectedRotationMatrix = nullptr;
+                        user->selectedTranslationMatrix = nullptr;
                         bool found = false;
 
                         //
@@ -90,6 +105,7 @@ void handlePressedKeys(GLFWwindow* window) {
                                 if (currentIndex == objectIndex)
                                 {
                                     user->selectedRotationMatrix = &object.rotation;
+                                    user->selectedTranslationMatrix = &object.translation;
                                     found = true;
                                     break;
                                 }
