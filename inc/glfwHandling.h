@@ -7,9 +7,8 @@
 #include "glad.h"
 #include "GLFW/glfw3.h"
 
+// Project headers
 #include "user.h"
-
-typedef std::set<int> Keys; 
 
 void keyReleaseHandler(GLFWwindow* window, int key, int scancode, int action, int mods);
 void handlePressedKeys(GLFWwindow* window);

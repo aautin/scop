@@ -34,43 +34,47 @@ void main() {
     vec3 lightDir = normalize(uLightPosition - vPosition);
     vec3 viewDir = normalize(uCameraPosition - vPosition);
 
+    //
     // Base color (from texture or vertex color)
+    //
     vec4 baseColor = uUseTexture == 1 ? texture(uTexture, vTexCoord) : vec4(vColor, 1.0);
 
+    //
     // Apply dissolve (opacity)
+    //
     baseColor.a *= uD;
 
-    // Illumination model handling
-    vec3 lighting;
-
-    // Ambient light
+    //
+    // Ambient diffuse and specular calculations
+    //
     vec3 ambient = uKa * uLightColor;
 
-    // Diffuse light
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = uKd * diff * uLightColor;
 
-    // Specular light
     vec3 specular = vec3(0.0);
     if (uNs > 0.0) { // Avoid pow(x, 0) issues
         vec3 halfVector = normalize(lightDir + viewDir);
         float spec = pow(max(dot(normal, halfVector), 0.0), uNs);
         specular = uKs * spec * uLightColor;
     }
-    
+
+    //
+    // Calculate final lighting based on the illumination model
+    //    
     switch (uIllum)
     {
-        case 0: // No lighting (color only)
+        case 0:
         {
             lighting = vec3(1.0);
             break;
         }
-        case 1: // Diffuse only (no specular)
+        case 1:
         {
             lighting = ambient + diffuse;
             break;
         }
-        default: // Phong shading for value 2 and unsupported illum values
+        default:
         {
             lighting = ambient + diffuse + specular;
             break;

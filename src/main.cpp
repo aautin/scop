@@ -260,124 +260,121 @@ int main(int argc, char** argv)
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	//-------------------------------//
+	//- Main loop (events and draw) -//
+	//-------------------------------//
+	while (!glfwWindowShouldClose(window))
+	{
+		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindVertexArray(VAO);
 
-//-------------------------------//
-//- Main loop (events and draw) -//
-//-------------------------------//
-while (!glfwWindowShouldClose(window))
-{
-    glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glBindVertexArray(VAO);
+		glUseProgram(shaderProgram);
+		glUniform1i(useTextureId, user.useTexture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
 
-    glUseProgram(shaderProgram);
-    glUniform1i(useTextureId, user.useTexture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+		auto viewMatrix = getViewMatrix(user);
 
-    auto viewMatrix = getViewMatrix(user);
+		glUniform3f(lightPosId, user.lightPosition.x, user.lightPosition.y, user.lightPosition.z);
+		glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
+		glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
+		glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, viewMatrix.data());
+		glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, user.projectionMatrix.data());
 
-    glUniform3f(lightPosId, user.lightPosition.x, user.lightPosition.y, user.lightPosition.z);
-    glUniform3f(lightColorId, user.lightColor.r, user.lightColor.g, user.lightColor.b);
-    glUniform3f(cameraPositionId, user.cameraPosition.x, user.cameraPosition.y, user.cameraPosition.z);
-    glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, viewMatrix.data());
-    glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, user.projectionMatrix.data());
+		// Separate objects into opaque and transparent, keeping track of their file
+		struct ObjectWithFile {
+			const SFile* file;
+			const SObject* object;
+		};
+		std::vector<ObjectWithFile> opaqueObjects;
+		std::vector<ObjectWithFile> transparentObjects;
 
-    // Separate objects into opaque and transparent, keeping track of their file
-    struct ObjectWithFile {
-        const SFile* file;
-        const SObject* object;
-    };
-    std::vector<ObjectWithFile> opaqueObjects;
-    std::vector<ObjectWithFile> transparentObjects;
+		for (const auto& [fileName, file] : user.files)
+		{
+			for (const auto& [name, object] : file.objects)
+			{
+				bool hasTransparentMaterial = false;
+				for (const auto& [materialName, materialGroup] : object.materialGroups)
+				{
+					const auto& material = file.materials.at(materialName);
+					if (isTransparent(material))
+					{
+						hasTransparentMaterial = true;
+						break;
+					}
+				}
 
-    for (const auto& [fileName, file] : user.files)
-    {
-        for (const auto& [name, object] : file.objects)
-        {
-            bool hasTransparentMaterial = false;
-            for (const auto& [materialName, materialGroup] : object.materialGroups)
-            {
-                const auto& material = file.materials.at(materialName);
-                if (isTransparent(material))
-                {
-                    hasTransparentMaterial = true;
-                    break;
-                }
-            }
+				if (hasTransparentMaterial)
+				{
+					transparentObjects.push_back({&file, &object});
+				}
+				else
+				{
+					opaqueObjects.push_back({&file, &object});
+				}
+			}
+		}
 
-            if (hasTransparentMaterial)
-            {
-                transparentObjects.push_back({&file, &object});
-            }
-            else
-            {
-                opaqueObjects.push_back({&file, &object});
-            }
-        }
-    }
+		// Render opaque objects first (depth writes enabled)
+		glDepthMask(GL_TRUE);
+		for (const auto& objWithFile : opaqueObjects)
+		{
+			const auto& object = *objWithFile.object;
+			SMat4 modelMatrix = object.translation * object.rotation;
+			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, modelMatrix.data());
 
-    // Render opaque objects first (depth writes enabled)
-    glDepthMask(GL_TRUE);
-    for (const auto& objWithFile : opaqueObjects)
-    {
-        const auto& object = *objWithFile.object;
-        SMat4 modelMatrix = object.translation * object.rotation;
-        glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, modelMatrix.data());
+			for (const auto& [materialName, materialGroup] : object.materialGroups)
+			{
+				const auto& material = objWithFile.file->materials.at(materialName);
+				glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
+				glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
+				glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
+				glUniform1f(NsId, material.specularExponent);
+				glUniform1f(NiId, material.opticalDensity);
+				glUniform1f(dId, material.dissolve);
+				glUniform1i(illumId, material.illuminationModel);
 
-        for (const auto& [materialName, materialGroup] : object.materialGroups)
-        {
-            const auto& material = objWithFile.file->materials.at(materialName);
-            glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
-            glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
-            glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
-            glUniform1f(NsId, material.specularExponent);
-            glUniform1f(NiId, material.opticalDensity);
-            glUniform1f(dId, material.dissolve);
-            glUniform1i(illumId, material.illuminationModel);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, materialGroup.ebo);
+				glDrawElements(GL_TRIANGLES, materialGroup.triangles.size() * 3, GL_UNSIGNED_INT, 0);
+			}
+		}
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, materialGroup.ebo);
-            glDrawElements(GL_TRIANGLES, materialGroup.triangles.size() * 3, GL_UNSIGNED_INT, 0);
-        }
-    }
+		// Render transparent objects (depth writes disabled, sorted back-to-front)
+		glDepthMask(GL_FALSE);
 
-    // Render transparent objects (depth writes disabled, sorted back-to-front)
-    glDepthMask(GL_FALSE);
+		for (const auto& objWithFile : transparentObjects)
+		{
+			const auto& object = *objWithFile.object;
+			SMat4 modelMatrix = object.translation * object.rotation;
+			glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, modelMatrix.data());
 
-    for (const auto& objWithFile : transparentObjects)
-    {
-        const auto& object = *objWithFile.object;
-        SMat4 modelMatrix = object.translation * object.rotation;
-        glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, modelMatrix.data());
+			for (const auto& [materialName, materialGroup] : object.materialGroups)
+			{
+				const auto& material = objWithFile.file->materials.at(materialName);
+				if (!isTransparent(material)) continue; // Skip non-transparent materials
 
-        for (const auto& [materialName, materialGroup] : object.materialGroups)
-        {
-            const auto& material = objWithFile.file->materials.at(materialName);
-            if (!isTransparent(material)) continue; // Skip non-transparent materials
+				glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
+				glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
+				glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
+				glUniform1f(NsId, material.specularExponent);
+				glUniform1f(NiId, material.opticalDensity);
+				glUniform1f(dId, material.dissolve);
+				glUniform1i(illumId, material.illuminationModel);
 
-            glUniform3f(KaId, material.ambientColor.r, material.ambientColor.g, material.ambientColor.b);
-            glUniform3f(KdId, material.diffuseColor.r, material.diffuseColor.g, material.diffuseColor.b);
-            glUniform3f(KsId, material.specularColor.r, material.specularColor.g, material.specularColor.b);
-            glUniform1f(NsId, material.specularExponent);
-            glUniform1f(NiId, material.opticalDensity);
-            glUniform1f(dId, material.dissolve);
-            glUniform1i(illumId, material.illuminationModel);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, materialGroup.ebo);
+				glDrawElements(GL_TRIANGLES, materialGroup.triangles.size() * 3, GL_UNSIGNED_INT, 0);
+			}
+		}
+		glDepthMask(GL_TRUE); // Restore depth writes
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, materialGroup.ebo);
-            glDrawElements(GL_TRIANGLES, materialGroup.triangles.size() * 3, GL_UNSIGNED_INT, 0);
-        }
-    }
-    glDepthMask(GL_TRUE); // Restore depth writes
+		glBindVertexArray(0);
+		glfwSwapBuffers(window);
 
-    glBindVertexArray(0);
-    glfwSwapBuffers(window);
-
-    glfwPollEvents();
-    handlePressedKeys(window);
-}
-
-
-
+		glfwPollEvents();
+		handlePressedKeys(window);
+	}
 
 	//-------------------------------//
 	//- Cleanup                     -//

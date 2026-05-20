@@ -33,7 +33,7 @@ void handlePressedKeys(GLFWwindow* window) {
 	auto user = static_cast<SUser*>(glfwGetWindowUserPointer(window));
 	
 	using ActionFunction = std::function<void(SUser*, float)>;
-    static const std::map<Keys, std::pair<ActionFunction, float>> keyBindings = {
+    static const std::map<std::set<int>, std::pair<ActionFunction, float>> keyBindings = {
         {{GLFW_KEY_L, GLFW_KEY_DOWN},  {moveLightBackward, 0.1f}},
         {{GLFW_KEY_L, GLFW_KEY_UP},    {moveLightForward, 0.1f}},
         {{GLFW_KEY_L, GLFW_KEY_LEFT},  {moveLightLeft, 0.1f}},

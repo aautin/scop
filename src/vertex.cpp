@@ -98,14 +98,14 @@ void assignNormals(const SObject& object, SVerticesVec& vertices)
 		for (const auto& triangle : materialContent.triangles)
 		{
 			SVec3 v0 = { vertices[triangle.vertexIndices[0]].position.x,
-							vertices[triangle.vertexIndices[0]].position.y,
-							vertices[triangle.vertexIndices[0]].position.z };
+						 vertices[triangle.vertexIndices[0]].position.y,
+						 vertices[triangle.vertexIndices[0]].position.z };
 			SVec3 v1 = { vertices[triangle.vertexIndices[1]].position.x,
-							vertices[triangle.vertexIndices[1]].position.y,
-							vertices[triangle.vertexIndices[1]].position.z };
+						 vertices[triangle.vertexIndices[1]].position.y,
+						 vertices[triangle.vertexIndices[1]].position.z };
 			SVec3 v2 = { vertices[triangle.vertexIndices[2]].position.x,
-							vertices[triangle.vertexIndices[2]].position.y,
-							vertices[triangle.vertexIndices[2]].position.z };
+						 vertices[triangle.vertexIndices[2]].position.y,
+						 vertices[triangle.vertexIndices[2]].position.z };
 
 			SVec3 nCross = cross(v1 - v0, v2 - v0);
 			float nLen = std::sqrt(nCross.x * nCross.x + nCross.y * nCross.y + nCross.z * nCross.z);
@@ -203,19 +203,25 @@ void assignTextureCoordinates(const SObject& object, SVerticesVec& vertices)
 
 				if (std::abs(vertex.normal.x) > std::abs(vertex.normal.y) && std::abs(vertex.normal.x) > std::abs(vertex.normal.z))
 				{
+					//
 					// Projection on yz plane
+					//
 					vertex.texture.u = (vertex.position.z - object.dimension.minZ) / object.dimension.depth();
 					vertex.texture.v = (vertex.position.y - object.dimension.minY) / object.dimension.height();
 				}
 				else if (std::abs(vertex.normal.y) > std::abs(vertex.normal.x) && std::abs(vertex.normal.y) > std::abs(vertex.normal.z))
 				{
+					//
 					// Projection on xz plane
+					//
 					vertex.texture.u = (vertex.position.x - object.dimension.minX) / object.dimension.width();
 					vertex.texture.v = (vertex.position.z - object.dimension.minZ) / object.dimension.depth();
 				}
 				else
 				{
+					//
 					// Projection on xy plane
+					//
 					vertex.texture.u = (vertex.position.x - object.dimension.minX) / object.dimension.width();
 					vertex.texture.v = (vertex.position.y - object.dimension.minY) / object.dimension.height();
 				}

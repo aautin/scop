@@ -38,6 +38,7 @@ struct SMat4
 	const float* data() const;
 };
 
+// Vector operators
 SVec3 operator+(SVec3 lhs, const SVec3& rhs);
 SVec3 operator-(SVec3 lhs, const SVec3& rhs);
 SVec3 operator-(SVec3 value);
@@ -45,13 +46,16 @@ SVec3 operator*(SVec3 value, float scalar);
 SVec3 operator*(float scalar, SVec3 value);
 SVec3 operator/(SVec3 value, float scalar);
 
+// Vector operations
 float dot(const SVec3& lhs, const SVec3& rhs);
 SVec3 cross(const SVec3& lhs, const SVec3& rhs);
 float length(const SVec3& value);
 SVec3 normalize(const SVec3& value);
 
+// Angle conversion
 float radians(float degrees);
 
+// Common transformation functions
 SMat4 identityMat4();
 SMat4 operator*(const SMat4& lhs, const SMat4& rhs);
 SMat4 translate(const SMat4& matrix, const SVec3& offset);
